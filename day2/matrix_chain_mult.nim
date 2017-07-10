@@ -2,18 +2,18 @@ import tables
 
 
 proc mult(x: openArray[(string, int, int)]): tuple[cost: int, order: string, rows, cols: int] =
-   let n = len(x)
+   let n = len(x) - 1
 
    var aux = initTable[(int, int), (int, string, int, int)]()
-   for i in 0 .. < n:
+   for i in 0 .. n:
       let (tname, trow, tcol) = x[i]
       # single matrix chain has zero cost
       aux[(i, i)] = (0, tname, trow, tcol)
 
    # i: length of subchain
-   for i in 1 .. < n:
+   for i in 1 .. n:
       # j: starting index of subchain
-      for j in 0 .. < n - i:
+      for j in 0 .. n - i:
          var best = high(int)
 
          # k: splitting point of subchain
@@ -30,7 +30,7 @@ proc mult(x: openArray[(string, int, int)]): tuple[cost: int, order: string, row
                best = cost
                aux[(j, j + i)] = (cost, tvar, lrow, rcol)
 
-   aux[(0, n - 1)]
+   aux[(0, n)]
 
 
 
