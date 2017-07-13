@@ -1,0 +1,8 @@
+{"compile":[
+],
+"link":[
+"/home/markedone/nim/src/nim-100days/day4/nimcache/count_ones.o",
+"/home/markedone/nim/src/nim-100days/day4/nimcache/stdlib_system.o"
+],
+"linkcmd": "gcc   -o /home/markedone/nim/src/nim-100days/day4/count_ones  /home/markedone/nim/src/nim-100days/day4/nimcache/count_ones.o /home/markedone/nim/src/nim-100days/day4/nimcache/stdlib_system.o    -ldl"
+}
