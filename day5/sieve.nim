@@ -7,12 +7,14 @@ proc eratosthenes(n: Natural): int =
    p[1] = 1
 
    let slimit = sqrt(n.float).int
-   for i in 0 .. slimit:
+   for i in 2 .. slimit:
       if p[i] == 0:
          for j in countup(i * i, n, i):
             p[j] = 1
 
    for i in p:
       result.inc i
+   result = n - result
+
 
 echo eratosthenes(1_000_000)
