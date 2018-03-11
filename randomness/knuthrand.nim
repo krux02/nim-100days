@@ -56,7 +56,7 @@ proc rand*(k: int): int =
          return u mod k
 
 when isMainModule:
-   proc testCase =
+   block testCase:
       let cases =
          [(123, 123, 5937333, 5005116, 932217),
           (4321, 54321, 208578991, 62946733, 145632258),
@@ -71,5 +71,3 @@ when isMainModule:
          assert(rand1mm1() == tuu)
          assert(xx == txx)
          assert(yy == tyy)
-
-   testCase()

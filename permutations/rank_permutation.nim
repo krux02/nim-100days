@@ -1,4 +1,4 @@
-import fact
+import factorial
 
 proc isPerm*(arr: openarray[int]): bool =
    result = true
