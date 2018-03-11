@@ -1,5 +1,8 @@
 # Ignore all root files
 /*
+# Exclude source code files in subdirectories
+!/*.nim
+!/*.txt
 # Exclude root directories
 !/*/
 # Include nimcache subdirectories
