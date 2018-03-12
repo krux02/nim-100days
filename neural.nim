@@ -1,9 +1,8 @@
+# 'borrowed' from fowlmouth at https://github.com/fowlmouth/nimlibs
 # available -define:
 #   NeuralFloat32 - makes float type used be float32
 
-import random
-import strutils
-import json
+import random, strutils, json
 from math import exp
 
 randomize()
@@ -25,35 +24,47 @@ type
       learningRate, momentum: NeuralFloat
       activationf: ActivationFunction
 
-   TTrainingData* = tuple[inputs, target: seq[NeuralFloat]]
+   TrainingData* = object
+      inputs, target: seq[NeuralFloat]
 
 let
    sigmoid* = ActivationFunction(
       fn: proc(value: NeuralFloat): NeuralFloat = 1 / (1 + exp(-value)),
       deriv: proc(value: NeuralFloat): NeuralFloat = value * (1 - value))
+
    tan* = ActivationFunction(
       fn: proc(v: NeuralFloat): NeuralFloat = math.tanh(v),
       deriv: proc(value: NeuralFloat): NeuralFloat = (let t = math.tanh(value); 1 - t * t))
 
-proc activationFunc*(nn: NeuralNet): ActivationFunction =
+proc activationFunc*(nn: NeuralNet): ActivationFunction {.inline.} =
    nn.activationf
-proc `activationFunc=`*(nn: NeuralNet, af: ActivationFunction) =
+
+proc `activationFunc=`*(nn: NeuralNet, af: ActivationFunction) {.inline.} =
    nn.activationf = af
 
-proc numLayers*(nn: NeuralNet): int = nn.layerSizes.len
-proc numInputs*(nn: NeuralNet): int = nn.layerSizes[0]
-proc numOutputs*(nn: NeuralNet): int = nn.layerSizes[nn.layerSizes.high]
+proc numLayers*(nn: NeuralNet): int {.inline.} =
+   nn.layerSizes.len
 
-proc getOutputs*(nn: NeuralNet): seq[NeuralFloat] = nn.outputs[nn.numLayers - 1]
-proc getOutput*(nn: NeuralNet; idx: int): NeuralFloat = nn.outputs[nn.numLayers - 1][idx]
+proc numInputs*(nn: NeuralNet): int {.inline.} =
+   nn.layerSizes[0]
 
-proc copy*(nn: NeuralNet): NeuralNet =
+proc numOutputs*(nn: NeuralNet): int {.inline.} =
+   nn.layerSizes[nn.layerSizes.high]
+
+proc getOutputs*(nn: NeuralNet): seq[NeuralFloat] {.inline.} =
+   nn.outputs[nn.numLayers - 1]
+
+proc getOutput*(nn: NeuralNet; idx: int): NeuralFloat {.inline.} =
+   nn.outputs[nn.numLayers - 1][idx]
+
+template copy*(nn: NeuralNet): NeuralNet =
    NeuralNet(
       layerSizes: nn.layerSizes,
       outputs: nn.outputs,
-      weights: nn.weights)
+      weights: nn.weights,
+      activationf: nn.activationf)
 
-proc newNeuralNet*(layers: openarray[int]): NeuralNet =
+proc newNeuralNet*(layers: seq[int]): NeuralNet =
    result = NeuralNet(
       layerSizes: @layers,
       activationf: sigmoid)
@@ -85,9 +96,9 @@ proc prepareForTraining*(nn: NeuralNet; learningRate, momentum: NeuralFloat) =
       for j in 0 ..< L:
          newSeq(nn.previousWeights[i][j], nn.layersizes[i - 1] + 1)
          for k in 0 ..< nn.layersizes[i - 1] + 1:
-            nn.weights[i][j][k] = random(1.0)
+            nn.weights[i][j][k] = rand(1.0)
 
-proc feed*(nn: NeuralNet; input: openarray[NeuralFloat]) =
+proc feed*(nn: NeuralNet; input: seq[NeuralFloat]) =
    # assign inputs
    for i in 0 ..< nn.numInputs:
       nn.outputs[0][i] = input[i]
@@ -100,7 +111,7 @@ proc feed*(nn: NeuralNet; input: openarray[NeuralFloat]) =
          sum += nn.weights[i][j][nn.layerSizes[i - 1]]
          nn.outputs[i][j] = nn.activationf.fn(sum)
 
-proc backProp*(nn: NeuralNet; input, target: openarray[NeuralFloat]) =
+proc backProp*(nn: NeuralNet; input, target: seq[NeuralFloat]) =
    assert target.len == nn.numOutputs
    assert input.len == nn.numInputs
 
@@ -149,7 +160,7 @@ proc backProp*(nn: NeuralNet; input, target: openarray[NeuralFloat]) =
          nn.weights[i][j][nn.layerSizes[i-1]] +=
             nn.previousWeights[i][j][nn.layerSizes[i-1]]
 
-proc meanSquareError(nn: NeuralNet; target: openarray[NeuralFloat]): NeuralFloat =
+proc meanSquareError(nn: NeuralNet; target: seq[NeuralFloat]): NeuralFloat =
    for i in 0 ..< nn.numOutputs:
       result +=
          (target[i] - nn.getOutput(i)) * (target[i] - nn.getoutput(i))
@@ -157,8 +168,8 @@ proc meanSquareError(nn: NeuralNet; target: openarray[NeuralFloat]): NeuralFloat
 
 proc ff(f: NeuralFloat; prec = 2): string = formatFloat(f, ffDecimal, prec)
 
-proc train*(nn: NeuralNet; data: openarray[TTrainingData];
-            numIters = 1_000_000; threshold = 0.000001) =
+proc train*(nn: NeuralNet; data: seq[TrainingData];
+            numIters = 1000_000; threshold = 0.000001) =
    for i in 0 ..< numIters:
       var correct = 0
       when defined(Debug):
@@ -180,7 +191,7 @@ proc train*(nn: NeuralNet; data: openarray[TTrainingData];
 
       when defined(Debug):
          if i mod int(numIters / 10) == 0:
-            avg_mse /= data.len.NeuralFloat
+            avg_mse = avg_mse / data.len.NeuralFloat
             echo "MSE: ", ff(avg_mse, 8)
 
 proc toFloat*(f: JsonNode): NeuralFloat =
@@ -194,6 +205,12 @@ proc toFloat*(f: JsonNode): NeuralFloat =
    else:
       discard
 
+proc getFloat(obj: JsonNode; field: string; default = 0.0): NeuralFloat =
+   if obj.hasKey(field):
+      obj[field].toFloat
+   else:
+      default
+
 proc toInt*(i: JsonNode): int =
    case i.kind
    of JInt:
@@ -204,6 +221,12 @@ proc toInt*(i: JsonNode): int =
       return i.str.parseInt
    else:
       discard
+
+proc getInt(obj: JsonNode; field: string; default = 0): int =
+   if obj.hasKey(field):
+      obj[field].toInt
+   else:
+      default
 
 proc setActivationFunc*(net: NeuralNet; fn: string) =
    case fn.toLowerAscii
@@ -233,20 +256,23 @@ proc loadNeuralNet*(data: JsonNode): NeuralNet =
                result.weights[layer][id1][id2] = data["weights"][layer-1][id1][id2].toFloat
 
    elif data.hasKey("training"):
-      var trainingData: seq[TTrainingData] = @[]
+      var trainingData: seq[TrainingData] = @[]
 
       let
-         iterations = data{"training", "iterations"}.getInt(500000)
-         threshold = data{"training", "threshold"}.getFloat(0.00001)
-         learningRate = data{"training", "learning-rate"}.getFloat(0.3)
-         momentum = data{"training", "momentum"}.getFloat(0.1)
+         training     = data["training"]
+         iterations   = training.getInt("iterations", 500000)
+         threshold    = training.getFloat("threshold", 0.00001)
+         learningRate = training.getFloat("learning-rate", 0.3)
+         momentum     = training.getFloat("momentum", 0.1)
 
       for t in data{"training", "set"}:
          let
             j_input = t[0]
             j_target= t[1]
+
          var
-            data: TTrainingData
+            data: TrainingData
+
          data.inputs = @[]
          data.target = @[]
 
@@ -278,7 +304,7 @@ proc `%`*(nn: NeuralNet): JsonNode =
          x.add y
       weights.add x
 
-   result = %{"layers": layers, "weights": weights}
+   %{"layers": layers, "weights": weights}
 
 proc save*(nn: NeuralNet; file: string) =
    let j = %nn
@@ -287,9 +313,7 @@ proc save*(nn: NeuralNet; file: string) =
 when isMainModule:
    import os, times
 
-   let sets = ["or", "xor", "and", "nand", "nor", "xnor"]
-
-   let training_data = {
+   let trainingData = {
       "or": %*{
          "layers": [2,1],
          "training": {
@@ -298,8 +322,7 @@ when isMainModule:
             [[1,0], [1]],
             [[0,1], [1]],
             [[0,0], [0]]]
-         }
-      },
+         }},
       "xor": %*{
          "layers": [2,2,1],
          "training": {
@@ -308,20 +331,18 @@ when isMainModule:
             [[1,0], [1]],
             [[1,1], [0]],
             [[0,0], [0]]]
-         }
+         }}
       }
-   }
 
-   for name, dat in training_data.items:
-      echo "Training \"", name, '"'
+   for name, data in trainingData.items:
+      echo "Training '", name, "'"
       let start = epochTime()
-      var net = loadNeuralNet(dat)
-      echo "finished in ", formatFloat(epochTime() - start, ffDecimal, 4), " seconds"
+      let net = loadNeuralNet(data)
+      echo "finished in ", ff(epochTime() - start, 4), " seconds"
 
       var inputs = newSeq[NeuralFloat](net.numInputs)
-      for s in dat["training"]["set"]:
-         for idx,f in s[0].elems.pairs:
+      for s in data["training"]["set"]:
+         for idx, f in s[0].elems.pairs:
             inputs[idx] = f.toFloat
          net.feed inputs
-         echo "  $# = $#".format(
-            inputs, net.getOutput(0))
+         echo "  ", inputs, " = ", net.getOutput(0)
