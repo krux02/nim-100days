@@ -14,7 +14,7 @@ type
    ActivationFunction* = object
       fn*, deriv*: proc(value: NeuralFloat): NeuralFloat {.nimcall.}
 
-   NeuralNet* = ref object
+   NeuralNet* = object
       layerSizes*: seq[int]
       outputs: seq[seq[NeuralFloat]] # outputs
       deltas: seq[seq[NeuralFloat]] # error values
@@ -37,7 +37,7 @@ let
 proc activationFunc*(n: NeuralNet): ActivationFunction {.inline.} =
    n.activationf
 
-proc `activationFunc=`*(n: NeuralNet, f: ActivationFunction) {.inline.} =
+proc `activationFunc=`*(n: var NeuralNet, f: ActivationFunction) {.inline.} =
    n.activationf = f
 
 proc numLayers*(n: NeuralNet): int {.inline.} =
@@ -78,7 +78,7 @@ proc newNeuralNet*(layers: seq[int]): NeuralNet =
          for j in 0 ..< len:
             newSeq(result.weights[i][j], layers[i - 1] + 1)
 
-proc prepareForTraining*(n: NeuralNet; learningRate, momentum: NeuralFloat) =
+proc prepareForTraining*(n: var NeuralNet; learningRate, momentum: NeuralFloat) =
    n.learningRate = learningRate
    n.momentum = momentum
 
@@ -96,7 +96,7 @@ proc prepareForTraining*(n: NeuralNet; learningRate, momentum: NeuralFloat) =
          for k in 0 ..< n.layersizes[i - 1] + 1:
             n.weights[i][j][k] = rand(1.0)
 
-proc feed*(n: NeuralNet; input: seq[NeuralFloat]) =
+proc feed*(n: var NeuralNet; input: seq[NeuralFloat]) =
    # assign inputs
    for i in 0 ..< n.numInputs:
       n.outputs[0][i] = input[i]
@@ -109,7 +109,7 @@ proc feed*(n: NeuralNet; input: seq[NeuralFloat]) =
          sum += n.weights[i][j][n.layerSizes[i - 1]]
          n.outputs[i][j] = n.activationf.fn(sum)
 
-proc backProp*(n: NeuralNet; input, target: seq[NeuralFloat]) =
+proc backProp*(n: var NeuralNet; input, target: seq[NeuralFloat]) =
    assert target.len == n.numOutputs
    assert input.len == n.numInputs
 
@@ -166,7 +166,7 @@ proc meanSquareError(n: NeuralNet; target: seq[NeuralFloat]): NeuralFloat =
 
 proc ff(f: NeuralFloat; prec = 2): string = formatFloat(f, ffDecimal, prec)
 
-proc train*(n: NeuralNet; data: seq[TrainingData];
+proc train*(n: var NeuralNet; data: seq[TrainingData];
             numIters = 1000_000; threshold = 0.000001) =
    for iter in 0 ..< numIters:
       var correct = 0
@@ -226,7 +226,7 @@ proc getInt(j: JsonNode; field: string; default = 0): int =
    else:
       default
 
-proc setActivationFunc*(n: NeuralNet; function: string) =
+proc setActivationFunc*(n: var NeuralNet; function: string) =
    case function.toLowerAscii
    of "tanh":
       n.activationf = tanh
@@ -313,31 +313,31 @@ when isMainModule:
 
    let trainingData = {
       "or": %*{
-         "layers": [2,1],
+         "layers": [2, 1],
          "activation_function": "tanh",
          "training": {
          "set": [
-            [[0,1], [1]],
-            [[1,0], [1]],
-            [[0,1], [1]],
-            [[0,0], [0]]]
+            [[0, 1], [1]],
+            [[1, 0], [1]],
+            [[0, 1], [1]],
+            [[0, 0], [0]]]
          }},
       "xor": %*{
-         "layers": [2,2,1],
+         "layers": [2, 2, 1],
          "activation_function": "tanh",
          "training": {
          "set": [
-            [[0,1], [1]],
-            [[1,0], [1]],
-            [[1,1], [0]],
-            [[0,0], [0]]]
+            [[0, 1], [1]],
+            [[1, 0], [1]],
+            [[1, 1], [0]],
+            [[0, 0], [0]]]
          }}
       }
 
    for name, data in trainingData.items:
       echo "Training '", name, "'"
       let start = epochTime()
-      let net = loadNeuralNet(data)
+      var net = loadNeuralNet(data)
       echo "finished in ", ff(epochTime() - start, 4), " seconds"
 
       var inputs = newSeq[NeuralFloat](net.numInputs)
