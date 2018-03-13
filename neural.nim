@@ -258,26 +258,21 @@ proc loadNeuralNet*(data: JsonNode): NeuralNet =
 
       let
          training = data["training"]
-         iterations = training.getInt("iterations", 500000)
+         iterations = training.getInt("iterations", 500_000)
          threshold = training.getFloat("threshold", 0.00001)
          learningRate = training.getFloat("learning-rate", 0.3)
          momentum = training.getFloat("momentum", 0.1)
 
       for t in training["set"]:
-         let
-            j_input = t[0]
-            j_target= t[1]
+         var data: TrainingData
 
-         var
-            data: TrainingData
+         data.inputs = newSeq[NeuralFloat](t[0].len)
+         data.target = newSeq[NeuralFloat](t[1].len)
 
-         data.inputs = @[]
-         data.target = @[]
-
-         for i in j_input:
-            data.inputs.add i.toFloat
-         for i in j_target:
-            data.target.add i.toFloat
+         for i, v in t[0].elems:
+            data.inputs[i] = v.toFloat
+         for i, v in t[1].elems:
+            data.target[i] = v.toFloat
 
          trainingData.add data
 
@@ -314,7 +309,6 @@ when isMainModule:
    let trainingData = {
       "or": %*{
          "layers": [2, 1],
-         "activation_function": "tanh",
          "training": {
          "set": [
             [[0, 1], [1]],
@@ -324,7 +318,6 @@ when isMainModule:
          }},
       "xor": %*{
          "layers": [2, 2, 1],
-         "activation_function": "tanh",
          "training": {
          "set": [
             [[0, 1], [1]],
@@ -342,7 +335,7 @@ when isMainModule:
 
       var inputs = newSeq[NeuralFloat](net.numInputs)
       for s in data["training"]["set"]:
-         for i, v in s[0].elems.pairs:
+         for i, v in s[0].elems:
             inputs[i] = v.toFloat
          net.feed inputs
          echo "  ", inputs, " = ", net.getOutput(0)
