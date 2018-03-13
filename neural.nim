@@ -3,7 +3,7 @@
 #   NeuralFloat32 - makes float type used be float32
 import random, strutils, json, math
 
-randomize()
+#randomize()
 
 when defined(NeuralFloat32):
    type NeuralFloat* = float32
@@ -16,8 +16,8 @@ type
 
    NeuralNet* = ref object
       layerSizes*: seq[int]
-      outputs: seq[seq[NeuralFloat]] #outputs
-      deltas:  seq[seq[NeuralFloat]] #error values
+      outputs: seq[seq[NeuralFloat]] # outputs
+      deltas: seq[seq[NeuralFloat]] # error values
       weights, previousWeights: seq[seq[seq[NeuralFloat]]]
       learningRate, momentum: NeuralFloat
       activationf: ActivationFunction
@@ -30,9 +30,9 @@ let
       fn: proc(v: NeuralFloat): NeuralFloat = 1 / (1 + exp(-v)),
       deriv: proc(v: NeuralFloat): NeuralFloat = v * (1 - v))
 
-   tan* = ActivationFunction(
-      fn: proc(v: NeuralFloat): NeuralFloat = math.tanh(v),
-      deriv: proc(v: NeuralFloat): NeuralFloat = (let t = math.tanh(v); 1 - t * t))
+   tanh* = ActivationFunction(
+      fn: proc(v: NeuralFloat): NeuralFloat = tanh(v),
+      deriv: proc(v: NeuralFloat): NeuralFloat = (let t = tanh(v); 1 - t * t))
 
 proc activationFunc*(n: NeuralNet): ActivationFunction {.inline.} =
    n.activationf
@@ -47,7 +47,7 @@ proc numInputs*(n: NeuralNet): int {.inline.} =
    n.layerSizes[0]
 
 proc numOutputs*(n: NeuralNet): int {.inline.} =
-   n.layerSizes[n.layerSizes.high]
+   n.layerSizes[n.layerSizes.len - 1]
 
 proc getOutputs*(n: NeuralNet): seq[NeuralFloat] {.inline.} =
    n.outputs[n.numLayers - 1]
@@ -71,11 +71,11 @@ proc newNeuralNet*(layers: seq[int]): NeuralNet =
    newSeq(result.outputs, layerCount)
    newSeq(result.weights, layerCount)
 
-   for i, L in layers:
-      newSeq(result.outputs[i], L)
+   for i, len in layers:
+      newSeq(result.outputs[i], len)
       if i > 0:
-         newSeq(result.weights[i], L)
-         for j in 0 ..< L:
+         newSeq(result.weights[i], len)
+         for j in 0 ..< len:
             newSeq(result.weights[i][j], layers[i - 1] + 1)
 
 proc prepareForTraining*(n: NeuralNet; learningRate, momentum: NeuralFloat) =
@@ -88,10 +88,10 @@ proc prepareForTraining*(n: NeuralNet; learningRate, momentum: NeuralFloat) =
    newSeq(n.previousWeights, layerCount)
 
    for i in 1 ..< layerCount:
-      let L = n.layerSizes[i]
-      newSeq(n.deltas[i], L)
-      newSeq(n.previousWeights[i], L)
-      for j in 0 ..< L:
+      let len = n.layerSizes[i]
+      newSeq(n.deltas[i], len)
+      newSeq(n.previousWeights[i], len)
+      for j in 0 ..< len:
          newSeq(n.previousWeights[i][j], n.layersizes[i - 1] + 1)
          for k in 0 ..< n.layersizes[i - 1] + 1:
             n.weights[i][j][k] = rand(1.0)
@@ -161,7 +161,7 @@ proc backProp*(n: NeuralNet; input, target: seq[NeuralFloat]) =
 proc meanSquareError(n: NeuralNet; target: seq[NeuralFloat]): NeuralFloat =
    for i in 0 ..< n.numOutputs:
       result +=
-         (target[i] - n.getOutput(i)) * (target[i] - n.getoutput(i))
+         (target[i] - n.getOutput(i)) * (target[i] - n.getOutput(i))
    result = result / 2.0
 
 proc ff(f: NeuralFloat; prec = 2): string = formatFloat(f, ffDecimal, prec)
@@ -229,9 +229,9 @@ proc getInt(j: JsonNode; field: string; default = 0): int =
 proc setActivationFunc*(n: NeuralNet; function: string) =
    case function.toLowerAscii
    of "tanh":
-      n.activationf = neural.tan
+      n.activationf = tanh
    of "logistic", "sigmoid":
-      n.activationf = neural.sigmoid
+      n.activationf = sigmoid
    else:
       raise newException(ValueError, "activation function not recognized: " & function)
 
@@ -249,9 +249,9 @@ proc loadNeuralNet*(data: JsonNode): NeuralNet =
 
    if data.hasKey("weights"):
       for layer in 1 ..< result.numLayers:
-         for id1 in 0 ..< data["weights"][layer-1].len:
-            for id2 in 0 ..< data["weights"][layer-1][id1].len:
-               result.weights[layer][id1][id2] = data["weights"][layer-1][id1][id2].toFloat
+         for i in 0 ..< data["weights"][layer-1].len:
+            for j in 0 ..< data["weights"][layer-1][i].len:
+               result.weights[layer][i][j] = data["weights"][layer-1][i][j].toFloat
 
    elif data.hasKey("training"):
       var trainingData: seq[TrainingData] = @[]
@@ -289,8 +289,8 @@ proc loadNeuralNet*(file: string): NeuralNet =
 
 proc `%`*(n: NeuralNet): JsonNode =
    let layers = newJarray()
-   for L in n.layerSizes:
-      layers.add(%L)
+   for len in n.layerSizes:
+      layers.add(%len)
 
    let weights = newJarray()
    for i in 1 ..< n.numLayers:
@@ -314,6 +314,7 @@ when isMainModule:
    let trainingData = {
       "or": %*{
          "layers": [2,1],
+         "activation_function": "tanh",
          "training": {
          "set": [
             [[0,1], [1]],
@@ -323,6 +324,7 @@ when isMainModule:
          }},
       "xor": %*{
          "layers": [2,2,1],
+         "activation_function": "tanh",
          "training": {
          "set": [
             [[0,1], [1]],
