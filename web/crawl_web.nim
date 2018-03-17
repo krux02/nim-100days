@@ -46,13 +46,12 @@ proc visitPage(url: string; cb: proc ()) =
       cb()
 
 iterator getUrls(s: string): string =
-   const quotes = {'\'', '\"'}
+   const quotes = {'\'', '"'}
    const sub = "href="
    var a {.noInit.}: SkipTable
    initSkipTable(a, sub)
    var i = 0
    while i < len(s):
-      var found = false
       var b = 0
       let f = find(a, s, sub, i)
       if f != -1:
@@ -62,10 +61,9 @@ iterator getUrls(s: string): string =
             b = i
             while s[i] notin quotes:
                inc(i)
-            found = true
-      else: break
-      if found:
-         yield substr(s, b, i)
+            yield substr(s, b, i)
+      else:
+         break
 
 when isMainModule:
    crawl()
