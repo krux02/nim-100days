@@ -10,7 +10,7 @@ const pagesToVisit = [
 
 proc scrape() =
    var tasks = newSeq[Future[void]](pagesToVisit.len)
-   for i in 0 ..< pagesToVisit.len:
+   for i in 0 .. high(pagesToVisit):
       tasks[i] = visitPage(pagesToVisit[i])
    waitFor all(tasks)
 
@@ -21,7 +21,7 @@ proc visitPage(url: string) {.async.} =
    try:
       content = await client.getContent(url)
    except:
-      echo("Error while visting ", url, getCurrentExceptionMsg())
+      echo("Error while visting ", url)
    client.close()
 
 
