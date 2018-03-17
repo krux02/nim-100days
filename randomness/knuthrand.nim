@@ -21,7 +21,7 @@ var
    zz: int
 
 proc randomize*() =
-   var tt = int(times.epochTime() * 1_000_000_000)
+   var tt = int(times.epochTime() * 1000_000_000)
    ## xx is the current time
    ## xx = 1 + ( (unsigned(tt)) % (unsigned(mm-1)) );
    xx = 1 + tt mod (mm - 1)

@@ -63,9 +63,8 @@ template copy*(n: NeuralNet): NeuralNet =
       activationf: n.activationf)
 
 proc newNeuralNet*(layers: seq[int]): NeuralNet =
-   result = NeuralNet(
-      layerSizes: layers,
-      activationf: sigmoid)
+   result.layerSizes = layers
+   result.activationf = sigmoid
 
    let layerCount = result.numLayers
    newSeq(result.outputs, layerCount)
@@ -192,6 +191,10 @@ proc train*(n: var NeuralNet; data: seq[TrainingData];
             avg_mse = avg_mse / data.len.NeuralFloat
             echo "MSE: ", ff(avg_mse, 8)
 
+proc predict*(n: var NeuralNet; input: seq[NeuralFloat]): NeuralFloat =
+   n.feed input
+   n.outputs[n.numLayers - 1][0]
+
 proc toFloat*(j: JsonNode): NeuralFloat =
    case j.kind
    of JInt:
@@ -310,21 +313,23 @@ when isMainModule:
       "or": %*{
          "layers": [2, 1],
          "training": {
-         "set": [
-            [[0, 1], [1]],
-            [[1, 0], [1]],
-            [[0, 1], [1]],
-            [[0, 0], [0]]]
-         }},
+            "set": [
+               [[0, 1], [1]],
+               [[1, 0], [1]],
+               [[0, 1], [1]],
+               [[0, 0], [0]]]
+            }
+         },
       "xor": %*{
          "layers": [2, 2, 1],
          "training": {
-         "set": [
-            [[0, 1], [1]],
-            [[1, 0], [1]],
-            [[1, 1], [0]],
-            [[0, 0], [0]]]
-         }}
+            "set": [
+               [[0, 1], [1]],
+               [[1, 0], [1]],
+               [[1, 1], [0]],
+               [[0, 0], [0]]]
+            }
+         }
       }
 
    for name, data in trainingData.items:
