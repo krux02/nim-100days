@@ -57,15 +57,12 @@ iterator getUrls(s: string): string =
       let f = find(a, s, sub, i)
       if f != -1:
          i = f + len(sub)
-         var p = i
-         while p > 0 and s[p] != '<': dec(p)
-         if s[p + 1] == 'a':
-            if s[i] in quotes:
+         if s[i] in quotes:
+            inc(i)
+            b = i
+            while s[i] notin quotes:
                inc(i)
-               b = i
-               while s[i] notin quotes:
-                  inc(i)
-               found = true
+            found = true
       else: break
       if found:
          yield substr(s, b, i)
