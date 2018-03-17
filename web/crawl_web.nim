@@ -45,24 +45,11 @@ proc visitPage(url: string; cb: proc ()) =
    finally:
       cb()
 
-proc skipUntil(s: string; until: string; unless = '\0'; start: int): int =
-   # Skips all characters until the string `until` is found. Returns 0
-   # if the char `unless` is found first or the end is reached.
-   var i = start
-   var u = 0
-   while true:
-      if s[i] == '\0' or s[i] == unless:
-         return 0
-      elif s[i] == until[0]:
-         u = 1
-         while i + u < s.len and u < until.len and s[i + u] == until[u]:
-            inc u
-         if u >= until.len: break
-      inc(i)
-   result = i + u - start
-
 iterator getUrls(s: string): string =
    const quotes = {'\'', '\"'}
+   const sub = "href="
+   var a {.noInit.}: SkipTable
+   initSkipTable(a, sub)
    var i = 0
    while i < len(s):
       var found = false
@@ -70,9 +57,9 @@ iterator getUrls(s: string): string =
       let n = skip(s, "<a", i)
       if n != 0:
          inc(i, n)
-         let f = skipUntil(s, "href=", '>', i)
-         if f != 0:
-            inc(i, f)
+         let f = find(a, s, sub, i)
+         if f != -1:
+            i = f + sub.len
             if s[i] in quotes:
                inc(i)
                b = i
