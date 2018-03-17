@@ -39,7 +39,8 @@ proc visitPage(url: string; cb: proc ()) =
          echo("Word ", searchWord, " found at page ", url)
       else:
          for u in content.getUrls:
-            pagesToVisit.add(u)
+            if u.startsWith("http:"):
+               pagesToVisit.add(u)
    except:
       echo("Error while visting ", url)
    finally:
@@ -61,7 +62,7 @@ iterator getUrls(s: string): string =
             b = i
             while s[i] notin quotes:
                inc(i)
-            yield substr(s, b, i)
+            yield substr(s, b, i - 1)
       else:
          break
 
