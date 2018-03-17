@@ -54,21 +54,21 @@ iterator getUrls(s: string): string =
    while i < len(s):
       var found = false
       var b = 0
-      let n = skip(s, "<a", i)
-      if n != 0:
-         inc(i, n)
-         let f = find(a, s, sub, i)
-         if f != -1:
-            i = f + sub.len
+      let f = find(a, s, sub, i)
+      if f != -1:
+         i = f + len(sub)
+         var p = i
+         while p > 0 and s[p] != '<': dec(p)
+         if s[p + 1] == 'a':
             if s[i] in quotes:
                inc(i)
                b = i
                while s[i] notin quotes:
                   inc(i)
                found = true
+      else: break
       if found:
          yield substr(s, b, i)
-      inc(i)
 
 when isMainModule:
    crawl()
