@@ -29,8 +29,7 @@ proc crawl() =
 proc visitPage(url: string; cb: proc ()) =
    # Add page to our set
    pagesVisited.incl(url)
-   numPagesVisited.inc
-
+   inc(numPagesVisited)
    # Make the request
    echo("Visiting page ", url)
    var content: string
@@ -38,8 +37,9 @@ proc visitPage(url: string; cb: proc ()) =
       content = client.getContent(url)
       if searchWord in content:
          echo("Word ", searchWord, " found at page ", url)
-      for u in content.getUrls:
-         pagesToVisit.add(u)
+      else:
+         for u in content.getUrls:
+            pagesToVisit.add(u)
    except:
       echo("Error while visting ", url)
    finally:
@@ -64,9 +64,9 @@ proc skipUntil(s: string; until: string; unless = '\0'; start: int): int =
 iterator getUrls(s: string): string =
    const quotes = {'\'', '\"'}
    var i = 0
-   var b = 0
    while i < len(s):
       var found = false
+      var b = 0
       let n = skip(s, "<a", i)
       if n != 0:
          inc(i, n)
@@ -74,15 +74,14 @@ iterator getUrls(s: string): string =
          if f != 0:
             inc(i, f)
             if s[i] in quotes:
-               inc(i, 1)
+               inc(i)
                b = i
                while s[i] notin quotes:
-                  inc(i, 1)
+                  inc(i)
                found = true
       if found:
          yield substr(s, b, i)
-      i = i + n + 1
-      b = 0
+      inc(i)
 
 when isMainModule:
    crawl()
