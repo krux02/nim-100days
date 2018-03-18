@@ -1,100 +1,164 @@
-import unicode
+import unicode, sequtils, strutils
 
-let mapping = {
-   " ": "_",
-   "Ά": "A",
-   "Έ": "E",
-   "Ή": "I",
-   "Ί": "I",
-   "Ό": "O",
-   "Ύ": "Y",
-   "Ώ": "OY",
-   "Α": "A",
-   "Β": "V",
-   "Γ": "G",
-   "Δ": "D",
-   "Ε": "E",
-   "Ζ": "Z",
-   "Η": "I",
-   "Θ": "TH",
-   "Ι": "I",
-   "Κ": "K",
-   "Λ": "L",
-   "Μ": "M",
-   "Ν": "N",
-   "Ξ": "X",
-   "Ο": "O",
-   "Π": "P",
-   "Ρ": "R",
-   "Σ": "S",
-   "Τ": "T",
-   "Υ": "Y",
-   "Φ": "F",
-   "Χ": "CH",
-   "Ψ": "PS",
-   "Ω": "OY",
-   "Ϊ": "I",
-   "Ϋ": "Y",
-   "ΐ": "i",
-   "ά": "a",
-   "έ": "e",
-   "ή": "i",
-   "ί": "i",
-   "α": "a",
-   "β": "v",
-   "γ": "g",
-   "δ": "d",
-   "ε": "e",
-   "ζ": "z",
-   "η": "i",
-   "θ": "th",
-   "ι": "i",
-   "κ": "k",
-   "λ": "l",
-   "μ": "m",
-   "ν": "n",
-   "ξ": "x",
-   "ο": "o",
-   "π": "p",
-   "ρ": "r",
-   "σ": "s",
-   "τ": "t",
-   "υ": "u",
-   "φ": "f",
-   "χ": "ch",
-   "ψ": "ps",
-   "ω": "oy",
-   "ϊ": "i",
-   "ϋ": "u",
-   "ό": "o",
-   "ύ": "u",
-   "ώ": "ou"
-}
+const
+   greekLetters = mapLiterals([
+      0x0386,  # Ά
+      0x0388,  # Έ
+      0x0389,  # Ή
+      0x038a,  # Ί
+      0x038c,  # Ό
+      0x038e,  # Ύ
+      0x038f,  # Ώ
+      0x0391,  # Α
+      0x0392,  # Β
+      0x0393,  # Γ
+      0x0394,  # Δ
+      0x0395,  # Ε
+      0x0396,  # Ζ
+      0x0397,  # Η
+      0x0398,  # Θ
+      0x0399,  # Ι
+      0x039a,  # Κ
+      0x039b,  # Λ
+      0x039c,  # Μ
+      0x039d,  # Ν
+      0x039e,  # Ξ
+      0x039f,  # Ο
+      0x03a0,  # Π
+      0x03a1,  # Ρ
+      0x03a3,  # Σ
+      0x03a4,  # Τ
+      0x03a5,  # Υ
+      0x03a6,  # Φ
+      0x03a7,  # Χ
+      0x03a8,  # Ψ
+      0x03a9,  # Ω
+      0x03aa,  # Ϊ
+      0x03ab,  # Ϋ
+      0x0390,  # ΐ
+      0x03ac,  # ά
+      0x03ad,  # έ
+      0x03ae,  # ή
+      0x03af,  # ί
+      0x03b1,  # α
+      0x03b2,  # β
+      0x03b3,  # γ
+      0x03b4,  # δ
+      0x03b5,  # ε
+      0x03b6,  # ζ
+      0x03b7,  # η
+      0x03b8,  # θ
+      0x03b9,  # ι
+      0x03ba,  # κ
+      0x03bb,  # λ
+      0x03bc,  # μ
+      0x03bd,  # ν
+      0x03be,  # ξ
+      0x03bf,  # ο
+      0x03c0,  # π
+      0x03c1,  # ρ
+      0x03c3,  # σ
+      0x03c4,  # τ
+      0x03c5,  # υ
+      0x03c6,  # φ
+      0x03c7,  # χ
+      0x03c8,  # ψ
+      0x03c9,  # ω
+      0x03ca,  # ϊ
+      0x03cb,  # ϋ
+      0x03cc,  # ό
+      0x03cd,  # ύ
+      0x03ce], Rune) # ώ
 
-proc binaryStrSearch(x: openArray[tuple[uni, lit: string]], y: string): int =
-   var a = 0
-   var b = len(x) - 1
-   while a <= b:
-      var mid = (a + b) div 2
-      var c = cmp(x[mid].uni, y)
-      if c < 0:
-         a = mid + 1
-      elif c > 0:
-         b = mid - 1
+   englishMapping = [
+      "A",  # Ά
+      "E",  # Έ
+      "I",  # Ή
+      "I",  # Ί
+      "O",  # Ό
+      "Y",  # Ύ
+      "OY", # Ώ
+      "A",  # Α
+      "V",  # Β
+      "G",  # Γ
+      "D",  # Δ
+      "E",  # Ε
+      "Z",  # Ζ
+      "I",  # Η
+      "TH", # Θ
+      "I",  # Ι
+      "K",  # Κ
+      "L",  # Λ
+      "M",  # Μ
+      "N",  # Ν
+      "X",  # Ξ
+      "O",  # Ο
+      "P",  # Π
+      "R",  # Ρ
+      "S",  # Σ
+      "T",  # Τ
+      "Y",  # Υ
+      "F",  # Φ
+      "CH", # Χ
+      "PS", # Ψ
+      "OY", # Ω
+      "I",  # Ϊ
+      "Y",  # Ϋ
+      "i",  # ΐ
+      "a",  # ά
+      "e",  # έ
+      "i",  # ή
+      "i",  # ί
+      "a",  # α
+      "v",  # β
+      "g",  # γ
+      "d",  # δ
+      "e",  # ε
+      "z",  # ζ
+      "i",  # η
+      "th", # θ
+      "i",  # ι
+      "k",  # κ
+      "l",  # λ
+      "m",  # μ
+      "n",  # ν
+      "x",  # ξ
+      "o",  # ο
+      "p",  # π
+      "r",  # ρ
+      "s",  # σ
+      "t",  # τ
+      "u",  # υ
+      "f",  # φ
+      "ch", # χ
+      "ps", # ψ
+      "oy", # ω
+      "i",  # ϊ
+      "u",  # ϋ
+      "o",  # ό
+      "u",  # ύ
+      "ou"] # ώ
+
+proc binaryRuneSearch(a: openArray[Rune], key: Rune): int =
+   # binary search for `key` in `a`. Returns -1 if not found.
+   var b = len(a)
+   while result < b:
+      var mid = (result + b) div 2
+      if a[mid] <% key:
+         result = mid + 1
       else:
-         return mid
-   result = - 1
-
-proc swap*(c: string): string =
-   var i = binaryStrSearch(mapping, c)
-   if i < 0: return c
-   result = mapping[i][1]
+         b = mid
+   if result >= len(a) or a[result] != key:
+      result = -1
 
 proc transliterate*(s: string): string =
    result = newStringOfCap(s.len)
    for r in runes(s):
-      let c = toUTF8(r)
-      result.add(swap(c))
+      var i = binaryRuneSearch(greekLetters, r)
+      if i >= 0:
+         result.add(englishMapping[i])
+      else:
+         result.add($r)
 
 proc transcribe*(s: string): string =
    discard
