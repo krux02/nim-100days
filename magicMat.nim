@@ -1,22 +1,21 @@
 type
-   Matrix = object
-      data: seq[seq[float]]
+   Matrix = seq[seq[float]]
 
 proc newMatrix(m, n: int): Matrix =
-   newSeq(result.data, m)
+   newSeq(result, m)
    for i in 0 ..< m:
-      newSeq(result.data[i], n)
+      newSeq(result[i], n)
 
 template `[]`(m: Matrix, i, j: int): float =
-   m.data[i][j]
+   m[i][j]
 
 template `[]=`(m: Matrix, i, j: int, v: float) =
-   m.data[i][j] = v
+   m[i][j] = v
 
 template `[]=`(m: Matrix, i, j: int, v) =
-   m.data[i][j] = float(v)
+   m[i][j] = float(v)
 
-proc magicMatrix(n: int): Matrix =
+proc magicSquare(n: int): Matrix =
    var m = newMatrix(n, n)
    # Odd order
    if n mod 2 == 1:
@@ -37,7 +36,7 @@ proc magicMatrix(n: int): Matrix =
    else:
       let p = n div 2
       let k = (n - 2) div 4
-      let a = magicmatrix(p)
+      let a = magicSquare(p)
       for j in 0 ..< p:
          for i in 0 ..< p:
             let aij = a[i, j]
@@ -54,7 +53,7 @@ proc magicMatrix(n: int): Matrix =
       swap(m[k, k], m[k + p, k])
    return m
 
-echo magicMatrix(5)
+echo magicSquare(5)
 
 #[ result:
 (data: @[
