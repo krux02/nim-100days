@@ -14,7 +14,7 @@
 
 # Modifications copyright (C) 2017 <Antonis G.>
 
-import math
+import math, random
 
 # -----------------
 # Type declarations
@@ -45,7 +45,13 @@ proc eye*(N: static[int], order = colMajor): Matrix[N, N] =
    result.order = order
    new result.data
    for i in 0 ..< N:
-      result.data[i * (1 + N)] = 1'f64
+      result.data[i * (1 + N)] = 1.0
+
+proc randMatrix*[M, N](max = 1.0, order = colMajor): Matrix[M, N] =
+   result.order = order
+   new result.data
+   for i in 0 ..< M * N:
+      result.data[i] = rand(max)
 
 # ---------------
 # Access routines
@@ -87,6 +93,7 @@ proc trace*[N](m: Matrix[N, N]): float =
       result += m.data[i * (1 + N)]
 
 proc `*`*[M, N](m: Matrix[M, N], k: float64): Matrix[M, N]  {.inline.} =
+   result.order = m.order
    new result.data
    for i in 0 ..< M * N:
       result.data[i] = m.data[i] * k
@@ -95,6 +102,8 @@ template `*`*(k: float64, v: Vector or Matrix): untyped = v * k
 template `/`*(v: Vector or Matrix, k: float64): untyped = v * (1 / k)
 
 proc `*`*[M, N, K](a: Matrix[M, K], b: Matrix[K, N]): Matrix[M, N] {.inline.} =
+   assert a.order == b.order
+   result.order = a.order
    new result.data
    let
       a_data = cast[ref DoubleArray[K, M]](a.data)
@@ -106,6 +115,8 @@ proc `*`*[M, N, K](a: Matrix[M, K], b: Matrix[K, N]): Matrix[M, N] {.inline.} =
             res_data[j][i] += a_data[k][i] * b_data[j][k]
 
 proc `+`*[M, N](a, b: Matrix[M, N]): Matrix[M, N] {.inline.} =
+   assert a.order == b.order
+   result.order = a.order
    new result.data
    let
       a_data = cast[ref DoubleArray[N, M]](a.data)
@@ -116,6 +127,8 @@ proc `+`*[M, N](a, b: Matrix[M, N]): Matrix[M, N] {.inline.} =
          res_data[j][i] = a_data[j][i] + b_data[j][i]
 
 proc `-`*[M, N](a, b: Matrix[M, N]): Matrix[M, N] {.inline.} =
+   assert a.order == b.order
+   result.order = a.order
    new result.data
    let
       a_data = cast[ref DoubleArray[N, M]](a.data)
@@ -126,6 +139,7 @@ proc `-`*[M, N](a, b: Matrix[M, N]): Matrix[M, N] {.inline.} =
          res_data[j][i] = a_data[j][i] - b_data[j][i]
 
 proc `=~`*[M, N: static[int]](a, b: Matrix[M, N]): bool {.inline.} =
+   assert a.order == b.order
    const epsilon = 1e-8
    let
       a_data = cast[ref DoubleArray[N, M]](a.data)
@@ -172,6 +186,38 @@ proc eigvals*(m: Matrix[3, 3]): tuple[eig1, eig2, eig3: float] =
 
 
 when isMainModule:
+   block scalarMultiply:
+      let
+         m1 = matrix([
+            [1.0, 3.0],
+            [2.0, 8.0],
+            [-2.0, 3.0]
+         ])
+         m2 = matrix([
+            [3.0, 9.0],
+            [6.0, 24.0],
+            [-6.0, 9.0]
+         ])
+      let ans1 = m1 * 3.0
+      let ans2 = 3.0 * m1
+      assert(ans1 =~ m2)
+      assert(ans2 =~ m2)
+
+   block scalarDivide:
+      let
+         m1 = matrix([
+            [1.0, 3.0],
+            [2.0, 8.0],
+            [-2.0, 3.0]
+         ])
+         m2 = matrix([
+            [3.0, 9.0],
+            [6.0, 24.0],
+            [-6.0, 9.0]
+         ])
+      let ans = m2 / 3.0
+      assert(ans =~ m1)
+
    block multiply:
       let
          m1 = matrix([
@@ -188,39 +234,45 @@ when isMainModule:
             [-10.0, -6.0, -8.0],
             [18.0, 14.0, -2.0]
          ])
-      let ans1 = m1 * m2
-      assert(ans1 =~ m3)
+      let ans = m1 * m2
+      assert(ans =~ m3)
 
    block add:
       let
-         m4 = matrix([
+         m1 = matrix([
             [1.0, -1.0],
             [-2.0, 3.0]
          ])
-         m5 = matrix([
+         m2 = matrix([
             [1.0, 2.0],
             [3.0, 4.0]
          ])
-         m6 = matrix([
+         m3 = matrix([
             [2.0, 1.0],
             [1.0, 7.0]
          ])
-      let ans2 = m4 + m5
-      assert(ans2 =~ m6)
+      let ans = m1 + m2
+      assert(ans =~ m3)
 
    block subtract:
       let
-         m7 = matrix([
+         m1 = matrix([
             [1.0, -1.0],
             [-2.0, 3.0]
          ])
-         m8 = matrix([
+         m2 = matrix([
             [1.0, 2.0],
             [3.0, 4.0]
          ])
-         m9 = matrix([
+         m3 = matrix([
             [0.0, -3.0],
             [-5.0, -1.0]
          ])
-      let ans3 = m7 - m8
-      assert(ans3 =~ m9)
+      let ans = m1 - m2
+      assert(ans =~ m3)
+
+   block randomMatrix:
+      let m1 = randMatrix[3, 5]()
+      for i in 0 ..< m1.M:
+         for j in 0 ..< m1.N:
+            assert m1[i, j] < 1.0

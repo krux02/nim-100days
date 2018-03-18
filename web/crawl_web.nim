@@ -53,13 +53,12 @@ iterator getUrls(s: string): string =
    initSkipTable(a, sub)
    var i = 0
    while i < len(s):
-      var b = 0
       let f = find(a, s, sub, i)
       if f != -1:
          i = f + len(sub)
          if s[i] in quotes:
             inc(i)
-            b = i
+            let b = i
             while s[i] notin quotes:
                inc(i)
             yield substr(s, b, i - 1)
