@@ -1,0 +1,67 @@
+type
+   Matrix = object
+      data: seq[seq[float]]
+
+proc newMatrix(m, n: int): Matrix =
+   newSeq(result.data, m)
+   for i in 0 ..< m:
+      newSeq(result.data[i], n)
+
+template `[]`(m: Matrix, i, j: int): float =
+   m.data[i][j]
+
+template `[]=`(m: Matrix, i, j: int, v: float) =
+   m.data[i][j] = v
+
+template `[]=`(m: Matrix, i, j: int, v) =
+   m.data[i][j] = float(v)
+
+proc magicMatrix(n: int): Matrix =
+   var m = newMatrix(n, n)
+   # Odd order
+   if n mod 2 == 1:
+      let a = (n + 1) div 2
+      let b = n + 1
+      for j in 0 ..< n:
+         for i in 0 ..< n:
+            m[i, j] = n * ((i + j + a) mod n) + ((i + 2 * j + b) mod n) + 1
+   # Doubly Even Order
+   elif n div 4 == 0:
+      for j in 0 ..< n:
+         for i in 0  ..< n:
+            if (i + 1) div 2 mod 2 == (j + 1) div 2 mod 2:
+               m[i, j] = n * n - n * i - j
+            else:
+               m[i, j] = n * i + j + 1
+   # Singly Even Order
+   else:
+      let p = n div 2
+      let k = (n - 2) div 4
+      let a = magicmatrix(p)
+      for j in 0 ..< p:
+         for i in 0 ..< p:
+            let aij = a[i, j]
+            m[i, j] = aij
+            m[i, j + p] = aij + float(2 * p * p)
+            m[i + p, j] = aij + float(3 * p * p)
+            m[i + p, j + p] = aij + float(p * p)
+      for i in 0 ..< p:
+         for j in 0 ..< k:
+            swap(m[i, j], m[i + p, j])
+         for j in n - k + 1 ..< n:
+            swap(m[i, j], m[i + p, j])
+      swap(m[k, 0], m[k + p, 0])
+      swap(m[k, k], m[k + p, k])
+   return m
+
+echo magicMatrix(5)
+
+#[ result:
+(data: @[
+   @[17.0, 24.0, 1.0, 8.0, 15.0],
+   @[23.0, 5.0, 7.0, 14.0, 16.0],
+   @[4.0, 6.0, 13.0, 20.0, 22.0],
+   @[10.0, 12.0, 19.0, 21.0, 3.0],
+   @[11.0, 18.0, 25.0, 2.0, 9.0]
+])
+]#
