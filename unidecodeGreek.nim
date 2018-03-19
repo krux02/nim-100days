@@ -9,6 +9,7 @@ const
       0x038c,  # Ό
       0x038e,  # Ύ
       0x038f,  # Ώ
+      0x0390,  # ΐ
       0x0391,  # Α
       0x0392,  # Β
       0x0393,  # Γ
@@ -35,7 +36,6 @@ const
       0x03a9,  # Ω
       0x03aa,  # Ϊ
       0x03ab,  # Ϋ
-      0x0390,  # ΐ
       0x03ac,  # ά
       0x03ad,  # έ
       0x03ae,  # ή
@@ -77,7 +77,8 @@ const
       "I",  # Ί
       "O",  # Ό
       "Y",  # Ύ
-      "OY", # Ώ
+      "O",  # Ώ
+      "i",  # ΐ
       "A",  # Α
       "V",  # Β
       "G",  # Γ
@@ -101,10 +102,9 @@ const
       "F",  # Φ
       "CH", # Χ
       "PS", # Ψ
-      "OY", # Ω
+      "O",  # Ω
       "I",  # Ϊ
       "Y",  # Ϋ
-      "i",  # ΐ
       "a",  # ά
       "e",  # έ
       "i",  # ή
@@ -132,12 +132,12 @@ const
       "f",  # φ
       "ch", # χ
       "ps", # ψ
-      "oy", # ω
+      "o",  # ω
       "i",  # ϊ
       "u",  # ϋ
       "o",  # ό
       "u",  # ύ
-      "ou"] # ώ
+      "o"]  # ώ
 
 proc binaryRuneSearch(a: openArray[Rune], key: Rune): int =
    # binary search for `key` in `a`. Returns -1 if not found.
@@ -151,8 +151,8 @@ proc binaryRuneSearch(a: openArray[Rune], key: Rune): int =
    if result >= len(a) or a[result] != key:
       result = -1
 
-proc transliterate*(s: string): string =
-   result = newStringOfCap(s.len)
+proc unidecode*(s: string): string =
+   result = newStringOfCap(s.len * 2 div 3) # just a guess
    for r in runes(s):
       var i = binaryRuneSearch(greekLetters, r)
       if i >= 0:
@@ -160,8 +160,8 @@ proc transliterate*(s: string): string =
       else:
          result.add($r)
 
-proc transcribe*(s: string): string =
-   discard
-
 when isMainModule:
-   assert transliterate("καθυστέρηση") == "kathusterisi"
+   assert unidecode("Ελληνική Δημοκρατία") == "Elliniki Dimokratia"
+   assert unidecode("Ελευθερία") == "Eleutheria"
+   assert unidecode("Ευαγγέλιο") == "Euaggelio"
+   assert unidecode("των υιών") == "ton uion"
