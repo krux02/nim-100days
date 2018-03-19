@@ -177,8 +177,24 @@ proc unidecode*(s: string): string =
       else:
          result.add($r)
 
-proc translitarate*(s: string): string {.inline.} =
-   multiReplace(s, elotMapping)
+proc translitarate*(s: string): string =
+   result = newStringOfCap(s.len * 2 div 3)
+   var
+      i = 0
+      p = 0
+      r: Rune
+   while i < len(s):
+      p = i
+      fastRuneAt(s, i, r)
+      block sIteration:
+         if int32(r) >= 0x037e'i32 and int32(r) <= 0x03ce'i32:
+            for tup in elotMapping:
+               if s.continuesWith(tup[0], p):
+                  result.add(tup[1])
+                  inc(p, tup[0].len)
+                  i = p
+                  break sIteration
+         result.add($r)
 
 when isMainModule:
    assert unidecode("Ελληνική Δημοκρατία") == "Elliniki Dimokratia"
