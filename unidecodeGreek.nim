@@ -93,8 +93,8 @@ const
       "",   #
       "",   #
       "",   #
-      "",   #
-      "",   #
+      "",   # ΄
+      "",   # ΅
       "A",  # Ά
       ";",  # ·
       "E",  # Έ
@@ -177,7 +177,7 @@ proc unidecode*(s: string): string =
       else:
          result.add($r)
 
-proc translitarate*(s: string): string =
+proc transliterate*(s: string): string =
    result = newStringOfCap(s.len * 2 div 3)
    var
       i = 0
@@ -187,6 +187,7 @@ proc translitarate*(s: string): string =
       p = i
       fastRuneAt(s, i, r)
       block sIteration:
+         # todo: turn this check into a ranged search
          if int32(r) >= 0x037e'i32 and int32(r) <= 0x03ce'i32:
             for tup in elotMapping:
                if s.continuesWith(tup[0], p):
@@ -203,8 +204,8 @@ when isMainModule:
    assert unidecode("άυλος") == "aulos"
    assert unidecode("των υιών") == "ton uion"
 
-   assert translitarate("Ελληνική Δημοκρατία") == "Elliniki Dimokratia"
-   assert translitarate("Ελευθερία") == "Eleutheria"
-   assert translitarate("Ευαγγέλιο") == "Euaggelio"
-   assert translitarate("άυλος") == "aylos"
-   assert translitarate("των υιών") == "ton yion"
+   assert transliterate("Ελληνική Δημοκρατία") == "Elliniki Dimokratia"
+   assert transliterate("Ελευθερία") == "Eleutheria"
+   assert transliterate("Ευαγγέλιο") == "Euaggelio"
+   assert transliterate("άυλος") == "aylos"
+   assert transliterate("των υιών") == "ton yion"
