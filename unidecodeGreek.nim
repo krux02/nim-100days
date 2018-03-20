@@ -1,19 +1,19 @@
 import unicode, strutils
 
 const
-   elotRules = {
-      "Αυ": "Au",
-      "Αύ": "Au",
-      "Ευ": "Eu",
-      "Εύ": "Eu",
-      "Ου": "Ou",
-      "Ού": "Ou",
-      "αυ": "au",
-      "αύ": "au",
-      "ευ": "eu",
-      "εύ": "eu",
-      "ου": "ou",
-      "ού": "ou"}
+   elotRules = [
+      "Αυ", "Au",
+      "Αύ", "Au",
+      "Ευ", "Eu",
+      "Εύ", "Eu",
+      "Ου", "Ou",
+      "Ού", "Ou",
+      "αυ", "au",
+      "αύ", "au",
+      "ευ", "eu",
+      "εύ", "eu",
+      "ου", "ou",
+      "ού", "ou"]
 
    englishMapping = [
       "?",  # ;
@@ -125,10 +125,10 @@ proc transliterate*(s: string): string =
       fastRuneAt(s, i, r)
       block sIteration:
          if r.hasRule:
-            for tup in elotRules:
-               if s.continuesWith(tup[0], p):
-                  result.add(tup[1])
-                  inc(p, tup[0].len)
+            for j in countup(0, high(elotRules), 2):
+               if s.continuesWith(elotRules[j], p):
+                  result.add(elotRules[j + 1])
+                  inc(p, elotRules[j].len)
                   i = p
                   break sIteration
          if int32(r) >= 0x037e'i32 and int32(r) <= 0x03ce'i32:
