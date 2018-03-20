@@ -1,14 +1,6 @@
 import unicode, strutils
 
 const
-   specialVowels = [ # treated as such
-      0x0391'i32, # Α
-      0x0395,  # Ε
-      0x039f,  # Ο
-      0x03b1,  # α
-      0x03b5,  # ε
-      0x03bf]  # ο
-
    elotRules = {
       "Αυ": "Au",
       "Αύ": "Au",
@@ -114,6 +106,14 @@ proc unidecode*(s: string): string =
       else:
          result.add($r)
 
+template hasRule(r: Rune): bool =
+   int32(r) == 0x0391'i32 or    # Α
+      int32(r) == 0x0395'i32 or # Ε
+      int32(r) == 0x039f'i32 or # Ο
+      int32(r) == 0x03b1'i32 or # α
+      int32(r) == 0x03b5'i32 or # ε
+      int32(r) == 0x03bf'i32    # ο
+
 proc transliterate*(s: string): string =
    result = newStringOfCap(s.len * 2 div 3)
    var
@@ -125,7 +125,7 @@ proc transliterate*(s: string): string =
       fastRuneAt(s, i, r)
       block sIteration:
          if int32(r) >= 0x037e'i32 and int32(r) <= 0x03ce'i32:
-            if int32(r) in specialVowels:
+            if r.hasRule:
                for tup in elotRules:
                   if s.continuesWith(tup[0], p):
                      result.add(tup[1])
