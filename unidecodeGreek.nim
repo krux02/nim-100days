@@ -124,14 +124,14 @@ proc transliterate*(s: string): string =
       p = i
       fastRuneAt(s, i, r)
       block sIteration:
+         if r.hasRule:
+            for tup in elotRules:
+               if s.continuesWith(tup[0], p):
+                  result.add(tup[1])
+                  inc(p, tup[0].len)
+                  i = p
+                  break sIteration
          if int32(r) >= 0x037e'i32 and int32(r) <= 0x03ce'i32:
-            if r.hasRule:
-               for tup in elotRules:
-                  if s.continuesWith(tup[0], p):
-                     result.add(tup[1])
-                     inc(p, tup[0].len)
-                     i = p
-                     break sIteration
             result.add(englishMapping[int(r) - 0x037e])
          else:
             result.add($r)
