@@ -1,6 +1,9 @@
 import unicode, strutils
 
 const
+   fastCheck = { # ΑΕΟαεο
+      0x0391, 0x0395, 0x039f, 0x03b1, 0x03b5, 0x03bf}
+
    elotRules = [
       "Αυ", "Au",
       "Αύ", "Au",
@@ -15,7 +18,7 @@ const
       "ου", "ou",
       "ού", "ou"]
 
-   englishMapping: array[0x037e'i32..0x03ce'i32, string] = [
+   englishMapping: array[0x037e..0x03ce, string] = [
       "?",  # ;
       "",   #
       "",   #
@@ -98,24 +101,16 @@ const
       "y",  # ύ
       "o"]  # ώ
 
-template hasElotRule(r): bool =
-   int32(r) == 0x0391'i32 or    # Α
-      int32(r) == 0x0395'i32 or # Ε
-      int32(r) == 0x039f'i32 or # Ο
-      int32(r) == 0x03b1'i32 or # α
-      int32(r) == 0x03b5'i32 or # ε
-      int32(r) == 0x03bf'i32    # ο
-
-template getMappedAscii(r) =
-   if int32(r) >= 0x037e'i32 and int32(r) <= 0x03ce'i32:
-      result.add(englishMapping[int32(r)])
+template addMappedAscii(r) =
+   if int32(r) >= 0x037e and int32(r) <= 0x03ce:
+      result.add(englishMapping[int(r)])
    else:
       result.add($r)
 
 proc unidecode*(s: string): string =
    result = newStringOfCap(s.len * 2 div 3) # just a guess
    for r in runes(s):
-      getMappedAscii(r)
+      addMappedAscii(r)
 
 proc transliterate*(s: string): string =
    result = newStringOfCap(s.len * 2 div 3)
@@ -127,14 +122,14 @@ proc transliterate*(s: string): string =
       p = i
       fastRuneAt(s, i, r)
       block sIteration:
-         if r.hasElotRule:
+         if int32(r) <= 0x07ff and int16(r) in fastCheck:
             for j in countup(0, high(elotRules), 2):
                if s.continuesWith(elotRules[j], p):
                   result.add(elotRules[j + 1])
                   inc(p, elotRules[j].len)
                   i = p
                   break sIteration
-         getMappedAscii(r)
+         addMappedAscii(r)
 
 when isMainModule:
    assert unidecode("Ελληνική Δημοκρατία") == "Elliniki Dimokratia"
