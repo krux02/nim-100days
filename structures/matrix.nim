@@ -1,5 +1,11 @@
 
-template newData =
+template checkBounds(cond: untyped, msg = "") =
+   when compileOption("boundChecks"):
+      {.line.}:
+         if not cond:
+            raise newException(IndexError, msg)
+
+template newData() =
    newSeq(result.data, result.m)
    for i in 0 ..< result.m:
       newSeq(result.data[i], result.n)
@@ -11,13 +17,13 @@ type Matrix = object
    m, n: int
 
 # Construct an m-by-n matrix of zeros. 
-proc newMatrix(m, n: int): Matrix =
+proc matrix(m, n: int): Matrix =
    result.m = m
    result.n = n
    newData()
 
 # Construct an m-by-n constant matrix.
-proc newMatrix(m, n: int, s: float): Matrix =
+proc matrix(m, n: int, s: float): Matrix =
    result.m = m
    result.n = n
    newData()
@@ -26,7 +32,7 @@ proc newMatrix(m, n: int, s: float): Matrix =
          result.data[i][j] = s
 
 # Construct a matrix from a 2-D array.
-proc newMatrix(data: seq[seq[float]]): Matrix =
+proc matrix(data: seq[seq[float]]): Matrix =
    result.m = data.len
    result.n = data[0].len
    result.data = data
@@ -34,7 +40,7 @@ proc newMatrix(data: seq[seq[float]]): Matrix =
 # Construct a matrix from a one-dimensional packed array
 # data One-dimensional array of float, packed by columns (ala Fortran).
 # Array length must be a multiple of m.
-proc newMatrix(data: seq[float], m: int): Matrix =
+proc matrix(data: seq[float], m: int): Matrix =
    result.m = m
    result.n = if m != 0: data.len div m else: 0
    assert result.m * result.n == data.len, "Array length must be a multiple of m."
@@ -75,21 +81,23 @@ proc `[]`(m: Matrix, i, j: int): float =
 
 # Get a submatrix.
 #   m[i0 .. i1, j0 .. j1]
-proc `[]`(m: Matrix, i0, i1, j0, j1: int): Matrix =
-   result.m = i1 - i0 + 1
-   result.n = j1 - j0 + 1
-   assert result.m > 0 and result.n > 0, "Submatrix dimensions"
+proc `[]`(m: Matrix, r, c: Slice[int]): Matrix =
+   checkBounds(r.a >= 0 and r.b < m.m, "Submatrix dimensions")
+   checkBounds(c.a >= 0 and c.b < m.n, "Submatrix dimensions")
+   result.m = r.b - r.a + 1
+   result.n = c.b - c.a + 1
    newData()
-   for i in i0 .. i1:
-      for j in j0 .. j1:
-         result.data[i - i0][j - j0] = m.data[i][j]
+   for i in r.a .. r.b:
+      for j in c.a .. c.b:
+         result.data[i - r.a][j - c.a] = m.data[i][j]
 
 # Get a submatrix.
 #   m[[0, 2, 3, 4], [1, 2, 3, 4]]
-proc `[]`(m: Matrix, r, c: seq[int]): Matrix =
+proc `[]`(m: Matrix, r, c: openarray[int]): Matrix =
+   checkBounds(r.len <= m.m, "Submatrix dimensions")
+   checkBounds(c.len <= m.n, "Submatrix dimensions")
    result.m = r.len
    result.n = c.len
-   assert result.m > 0 and result.n > 0, "Submatrix dimensions"
    newData()
    for i in 0 ..< r.len:
       for j in 0 ..< c.len:
@@ -97,25 +105,27 @@ proc `[]`(m: Matrix, r, c: seq[int]): Matrix =
 
 # Get a submatrix.
 #   m[i0 .. i1, [0, 2, 3, 4]]
-proc `[]`(m: Matrix, i0, i1: int, c: seq[int]): Matrix =
-   result.m = i1 - i0 + 1
+proc `[]`(m: Matrix, r: Slice[int], c: openarray[int]): Matrix =
+   checkBounds(r.a >= 0 and r.b < m.m, "Submatrix dimensions")
+   checkBounds(c.len <= m.n, "Submatrix dimensions")
+   result.m = r.b - r.a + 1
    result.n = c.len
-   assert result.m > 0 and result.n > 0, "Submatrix dimensions"
    newData()
-   for i in i0 .. i1:
+   for i in r.a .. r.b:
       for j in 0 ..< c.len:
-         result.data[i - i0][j] = m.data[i][c[j]]
+         result.data[i - r.a][j] = m.data[i][c[j]]
 
 # Get a submatrix.
 #   m[[0, 2, 3, 4], j0 .. j1]
-proc `[]`(m: Matrix, r: seq[int], j0, j1: int): Matrix =
+proc `[]`(m: Matrix, r: openarray[int], c: Slice[int]): Matrix =
+   checkBounds(r.len <= m.m, "Submatrix dimensions")
+   checkBounds(c.a >= 0 and c.b < m.n, "Submatrix dimensions")
    result.m = r.len
-   result.n = j1 - j0 + 1
-   assert result.m > 0 and result.n > 0, "Submatrix dimensions"
+   result.n = c.b - c.a + 1
    newData()
    for i in 0 ..< r.len:
-      for j in j0 .. j1:
-         result.data[i][j - j0] = m.data[r[i]][j]
+      for j in c.a .. c.b:
+         result.data[i][j - c.a] = m.data[r[i]][j]
 
 # Set a single element.
 proc `[]=`(m: var Matrix, i, j: int, s: float) =
@@ -123,39 +133,43 @@ proc `[]=`(m: var Matrix, i, j: int, s: float) =
 
 # Set a submatrix.
 #   m[i0 .. i1, j0 .. j1] = a
-proc `[]=`(m: var Matrix, i0, i1, j0, j1: int, a: Matrix) =
-   assert i1 - i0 + 1 == a.m and j1 - j0 + 1 == a.n, "Submatrix dimensions"
-   for i in i0 .. i1:
-      for j in j0 .. j1:
-         m.data[i][j] = a.data[i - i0][j - j0]
+proc `[]=`(m: var Matrix, r, c: Slice[int], a: Matrix) =
+   checkBounds(r.b - r.a + 1 == a.m, "Submatrix dimensions")
+   checkBounds(c.b - c.a + 1 == a.n, "Submatrix dimensions")
+   for i in r.a .. r.b:
+      for j in c.a .. c.b:
+         m.data[i][j] = a.data[i - r.a][j - c.a]
 
 # Set a submatrix.
-proc `[]=`(m: var Matrix, r, c: seq[int], a: Matrix) =
-   assert r.len == a.m and c.len == a.n, "Submatrix dimensions"
+proc `[]=`(m: var Matrix, r, c: openarray[int], a: Matrix) =
+   checkBounds(r.len == a.m, "Submatrix dimensions")
+   checkBounds(c.len == a.n, "Submatrix dimensions")
    for i in 0 ..< r.len:
       for j in 0 ..< c.len:
          m.data[r[i]][c[j]] = a.data[i][j]
 
 # Set a submatrix.
 #   m[[0, 2, 3, 4], j0 .. j1] = a
-proc `[]=`(m: var Matrix, r: seq[int], j0, j1: int, a: Matrix) =
-   assert r.len == a.m and j1 - j0 + 1 == a.n, "Submatrix dimensions"
+proc `[]=`(m: var Matrix, r: openarray[int], c: Slice[int], a: Matrix) =
+   checkBounds(r.len == a.m, "Submatrix dimensions")
+   checkBounds(c.b - c.a + 1 == a.n, "Submatrix dimensions")
    for i in 0 ..< r.len:
-      for j in j0 .. j1:
-         m.data[r[i]][j] = a.data[i][j - j0]
+      for j in c.a .. c.b:
+         m.data[r[i]][j] = a.data[i][j - c.a]
 
 # Set a submatrix.
 #   m[i0 .. i1, [0, 2, 3, 4]] = a
-proc `[]=`(m: var Matrix, i0, i1: int, c: seq[int], a: Matrix) =
-   assert i1 - i0 + 1 == a.m and c.len == a.n, "Submatrix dimensions"
-   for i in i0 .. i1:
+proc `[]=`(m: var Matrix, r: Slice[int], c: openarray[int], a: Matrix) =
+   checkBounds(r.b - r.a + 1 == a.m, "Submatrix dimensions")
+   checkBounds(c.len == a.n, "Submatrix dimensions")
+   for i in r.a .. r.b:
       for j in 0 ..< c.len:
-         m.data[i][c[j]] = a.data[i - i0][j]
+         m.data[i][c[j]] = a.data[i - r.a][j]
 
 when isMainModule:
-   let m = newMatrix(@[
+   let m = matrix(@[
       @[1.0, 3.0],
       @[2.0, 8.0],
       @[-2.0, 3.0]])
 
-   echo m[0, 0]
+   echo m[[1], 0 .. 1]
