@@ -1,8 +1,4 @@
 
-type
-   Array[n: static[int]] = array[n, float]
-   DoubleArray[m, n: static[int]] = array[m, array[n, float]]
-
 template newData =
    newSeq(result.data, result.m)
    for i in 0 ..< result.m:
@@ -30,7 +26,7 @@ proc newMatrix(m, n: int, s: float): Matrix =
          result.data[i][j] = s
 
 # Construct a matrix from a 2-D array.
-proc newMatrix(data: DoubleArray): Matrix =
+proc newMatrix(data: seq[seq[float]]): Matrix =
    result.m = data.len
    result.n = data[0].len
    result.data = data
@@ -38,13 +34,13 @@ proc newMatrix(data: DoubleArray): Matrix =
 # Construct a matrix from a one-dimensional packed array
 # data One-dimensional array of float, packed by columns (ala Fortran).
 # Array length must be a multiple of m.
-proc newMatrix(data: Array, m: int): Matrix =
+proc newMatrix(data: seq[float], m: int): Matrix =
    result.m = m
    result.n = if m != 0: data.len div m else: 0
    assert result.m * result.n == data.len, "Array length must be a multiple of m."
    newData()
    for i in 0 ..< m:
-      for j in 0 ..< n:
+      for j in 0 ..< result.n:
          result.data[i][j] = data[i + j * m]
 
 # Copy the internal two-dimensional array.
@@ -155,3 +151,11 @@ proc `[]=`(m: var Matrix, i0, i1: int, c: seq[int], a: Matrix) =
    for i in i0 .. i1:
       for j in 0 ..< c.len:
          m.data[i][c[j]] = a.data[i - i0][j]
+
+when isMainModule:
+   let m = newMatrix(@[
+      @[1.0, 3.0],
+      @[2.0, 8.0],
+      @[-2.0, 3.0]])
+
+   echo m[0, 0]
