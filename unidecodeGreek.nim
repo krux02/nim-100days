@@ -137,9 +137,11 @@ when isMainModule:
    assert unidecode("Ευαγγέλιο") == "Eyaggelio"
    assert unidecode("άυλος") == "aylos"
    assert unidecode("των υιών") == "ton yion"
+   assert unidecode("μυϊκός, ευφυΐα, βεδουίνος") == "myikos, eyfyia, vedoyinos"
 
    assert transliterate("Ελληνική Δημοκρατία") == "Elliniki Dimokratia"
    assert transliterate("Ελευθερία") == "Eleutheria"
    assert transliterate("Ευαγγέλιο") == "Euaggelio"
    assert transliterate("άυλος") == "aylos"
    assert transliterate("των υιών") == "ton yion"
+   assert transliterate("μυϊκός, ευφυΐα, βεδουίνος") == "myikos, eufyia, vedouinos"
