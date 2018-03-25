@@ -3,7 +3,7 @@ import math
 
 type
    Buffer*[N: static[int]; T] = object
-      head, tail: uint
+      head, tail: int
       data: ref array[N, T]
 
 proc newBuffer*[N, T]: Buffer[N, T] =
@@ -12,7 +12,7 @@ proc newBuffer*[N, T]: Buffer[N, T] =
 
 proc len*[N, T](b: Buffer[N, T]): int {.inline.} =
    ## Return the number of elements of `b`.
-   int(b.tail - b.head)
+   b.tail - b.head
 
 proc isEmpty*[N, T](b: Buffer[N, T]): bool {.inline.} =
    ## Is the buffer empty.
@@ -28,40 +28,40 @@ proc hasError*[N, T](b: Buffer[N, T]): bool {.inline.} =
 
 proc add*[N, T](b: var Buffer[N, T], item: T) =
    ## Add an `item` to the end of the buffer.
-   b.data[int(b.tail) and (N - 1)] = item
+   b.data[b.tail and (N - 1)] = item
    inc(b.tail)
 
 proc pop*[N, T](b: var Buffer[N, T]): T =
    ## Remove and returns the first element of the buffer.
-   result = b.data[int(b.head) and (N - 1)]
+   result = b.data[b.head and (N - 1)]
    inc(b.head)
 
 proc peekFirst*[N, T](b: Buffer[N, T]): T =
    ## Returns the first element of `b`, but does not remove it from the buffer.
-   b.data[int(b.head) and (N - 1)]
+   b.data[b.head and (N - 1)]
 
 proc peekLast*[N, T](b: Buffer[N, T]): T =
    ## Returns the last element of `b`, but does not remove it from the buffer.
-   b.data[int(b.tail - 1) and (N - 1)]
+   b.data[(b.tail - 1) and (N - 1)]
 
 proc `[]`*[N, T](b: Buffer[N, T], i: Natural): T {.inline.} =
    ## Access the i-th element of `b` by order from first to last.
    ## b[0] is the first, b[^1] is the last.
-   b.data[int(b.head + uint(i)) and (N - 1)]
+   b.data[(b.head + i) and (N - 1)]
 
 proc `[]`*[N, T](b: Buffer[N, T], i: BackwardsIndex): T {.inline.} =
-   b.data[int(b.tail - uint(i)) and (N - 1)]
+   b.data[(b.tail - i) and (N - 1)]
 
 iterator items*[N, T](b: Buffer[N, T]): T =
    ## Yield every element of `b`.
-   var i = int(b.head) and (N - 1)
+   var i = b.head and (N - 1)
    for c in 0 ..< len(b):
       yield b.data[i]
       i = (i + 1) and (N - 1)
 
 iterator pairs*[N, T](b: Buffer[N, T]): tuple[key: int, val: T] =
    ## Yield every (position, value) of `b`.
-   var i = int(b.head) and (N - 1)
+   var i = b.head and (N - 1)
    for c in 0 ..< len(b):
       yield (c, b.data[i])
       i = (i + 1) and (N - 1)
