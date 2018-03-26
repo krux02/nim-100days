@@ -1,3 +1,4 @@
+import math
 
 template checkBounds(cond: untyped, msg = "") =
    when compileOption("boundChecks"):
@@ -35,6 +36,9 @@ proc matrix(m, n: int, s: float): Matrix =
 proc matrix(data: seq[seq[float]]): Matrix =
    result.m = data.len
    result.n = data[0].len
+   when compileOption("assertions"):
+      for i in 0 ..< result.m:
+         assert(data[i].len == result.n, "All rows must have the same length.")
    result.data = data
 
 # Construct a matrix from a one-dimensional packed array
@@ -166,10 +170,167 @@ proc `[]=`(m: var Matrix, r: Slice[int], c: openarray[int], a: Matrix) =
       for j in 0 ..< c.len:
          m.data[i][c[j]] = a.data[i - r.a][j]
 
-when isMainModule:
-   let m = matrix(@[
-      @[1.0, 3.0],
-      @[2.0, 8.0],
-      @[-2.0, 3.0]])
+# Matrix transpose.
+proc transpose(m: Matrix): Matrix =
+   result.m = m.n
+   result.n = m.m
+   newData()
+   for i in 0 ..< m.m:
+      for j in 0 ..< m.n:
+         result.data[j][i] = m.data[i][j]
 
-   echo m[[1], 0 .. 1]
+# One norm
+# returns maximum column sum.
+proc norm1(m: Matrix): float =
+   for j in 0 ..< m.n:
+      var s = 0.0
+      for i in 0 ..< m.m:
+         s += abs(m.data[i][j])
+      result = max(result, s)
+
+# Two norm
+# returns maximum singular value.
+# proc norm2(m: Matrix): float =
+#    singularValueDecomposition(m).norm2())
+
+# Infinity norm
+# returns maximum row sum.
+proc normInf(m: Matrix): float =
+   for i in 0 ..< m.m:
+      var s = 0.0
+      for j in 0 ..< m.n:
+         s += abs(m.data[i][j])
+      result = max(result, s)
+
+# Frobenius norm
+# returns sqrt of sum of squares of all elements.
+proc normF(m: Matrix): float =
+   for i in 0 ..< m.m:
+      for j in 0 ..< m.n:
+         result = hypot(result, m.data[i][j])
+
+# Unary minus
+proc `-`(m: Matrix): Matrix =
+   result.m = m.m
+   result.n = m.n
+   newData()
+   for i in 0 ..< m.m:
+      for j in 0 ..< m.n:
+         result.data[i][j] = -m.data[i][j]
+
+# C = A + B
+proc `+`(a, b: Matrix): Matrix =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   result.m = a.m
+   result.n = a.n
+   newData()
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         result.data[i][j] = a.data[i][j] + b.data[i][j]
+
+# A = A + B
+proc `+=`(a: var Matrix, b: Matrix) =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         a.data[i][j] = a.data[i][j] + b.data[i][j]
+
+# C = A - B
+proc `-`(a, b: Matrix): Matrix =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   result.m = a.m
+   result.n = a.n
+   newData()
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         result.data[i][j] = a.data[i][j] + b.data[i][j]
+
+# A = A - B
+proc `-=`(a: var Matrix, b: Matrix) =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         a.data[i][j] = a.data[i][j] + b.data[i][j]
+
+# Element-by-element multiplication, C = A.*B
+proc `.*`(a, b: Matrix): Matrix =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   result.m = a.m
+   result.n = a.n
+   newData()
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         result.data[i][j] = a.data[i][j] * b.data[i][j]
+
+# Element-by-element multiplication in place, A = A.*B
+proc `.*=`(a: var Matrix, b: Matrix) =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         a.data[i][j] = a.data[i][j] * b.data[i][j]
+
+# Element-by-element right division, C = A./B
+proc `./`(a, b: Matrix): Matrix =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   result.m = a.m
+   result.n = a.n
+   newData()
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         result.data[i][j] = a.data[i][j] / b.data[i][j]
+
+# Element-by-element right division in place, A = A./B
+proc `./=`(a: var Matrix, b: Matrix) =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         a.data[i][j] = a.data[i][j] / b.data[i][j]
+
+# Element-by-element left division, C = A.\B
+proc `.\`(a, b: Matrix): Matrix =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   result.m = a.m
+   result.n = a.n
+   newData()
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         result.data[i][j] = b.data[i][j] / a.data[i][j]
+
+# Element-by-element left division in place, A = A.\B
+proc `.\=`(a: var Matrix, b: Matrix) =
+   assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
+   for i in 0 ..< a.m:
+      for j in 0 ..< a.n:
+         a.data[i][j] = b.data[i][j] / a.data[i][j]
+
+# Multiply a matrix by a scalar, C = s*A
+proc `*`(s: float, m: Matrix): Matrix =
+   result.m = m.m
+   result.n = m.n
+   newData()
+   for i in 0 ..< m.m:
+      for j in 0 ..< m.n:
+         result.data[i][j] = s * m.data[i][j]
+
+# Multiply a matrix by a scalar in place, A = s*A
+proc `*=`(m: var Matrix, s: float) =
+   for i in 0 ..< m.m:
+      for j in 0 ..< m.n:
+         m.data[i][j] = s * m.data[i][j]
+
+# Linear algebraic matrix multiplication, A * B
+proc `*`(a, b: Matrix): Matrix =
+   assert(b.m == a.n, "Matrix inner dimensions must agree.")
+   result.m = a.m
+   result.n = b.n
+   newData()
+   var b_colj = newSeq[float](a.n)
+   for j in 0 ..< b.n:
+      for k in 0 ..< a.n:
+         b_colj[k] = b.data[k][j]
+      for i in 0 ..< a.m:
+         var a_rowi = a.data[i]
+         var s = 0.0
+         for k in 0 ..< a.n:
+            s += a_rowi[k] * b_colj[k]
+         result.data[i][j] = s
