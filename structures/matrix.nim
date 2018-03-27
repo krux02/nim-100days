@@ -334,3 +334,93 @@ proc `*`(a, b: Matrix): Matrix =
          for k in 0 ..< a.n:
             s += a_rowi[k] * b_colj[k]
          result.data[i][j] = s
+
+#[
+# LU Decomposition
+proc lu(m: Matrix): LUDecomposition =
+   LUDecomposition(m)
+
+# QR Decomposition
+proc qr(m: Matrix): QRDecomposition =
+   QRDecomposition(m)
+
+# Cholesky Decomposition
+proc chol(m: Matrix): CholeskyDecomposition =
+   CholeskyDecomposition(m)
+
+# Singular Value Decomposition
+proc svd(m: Matrix): SingularValueDecomposition =
+   SingularValueDecomposition(m)
+
+# Eigenvalue Decomposition
+proc eig(m: Matrix): EigenvalueDecomposition =
+   EigenvalueDecomposition(m)
+
+# Solve A*X = B
+# param B  right hand side
+# returns  solution if A is square, least squares solution otherwise
+proc solve(a, b: Matrix): Matrix =
+   if m == n:
+      LUDecomposition(a).solve(b)
+   else:
+      QRDecomposition(a).solve(b)
+
+# Solve X*A = B, which is also A'*X' = B'
+# param B  right hand side
+# returns  solution if A is square, least squares solution otherwise.
+proc solveTranspose(a, b: Matrix): Matrix =
+   transpose(m).solve(b.transpose())
+
+# Matrix inverse or pseudoinverse
+# returns inverse(A) if A is square, pseudoinverse otherwise.
+proc inverse(m: Matrix): Matrix =
+   solve(m, identity(m.m, m.m))
+
+# Matrix determinant
+proc det(m: Matrix): float =
+   LUDecomposition(m).det()
+
+# Matrix rank
+# returns  effective numerical rank, obtained from SVD.
+proc rank(m: Matrix): int =
+   SingularValueDecomposition(m).rank()
+
+# Matrix condition (2 norm)
+# returns  ratio of largest to smallest singular value.
+proc cond(m: Matrix): float =
+   SingularValueDecomposition(m).cond()
+
+# Matrix trace.
+# return  sum of the diagonal elements.
+proc trace(m: Matrix): float =
+   for i in 0 ..< min(m.m, m.n):
+      result += m.data[i][i]
+
+# Generate matrix with random elements
+# return  An m-by-n matrix with uniformly distributed random elements.
+proc randMatrix(m, n): Matrix =
+   result.m = m
+   result.n = n
+   newData()
+   for i in 0 ..< m:
+      for j in 0 ..< n:
+         result.data[i][j] = rand(1.0)
+
+# Generate identity matrix
+# returns An m-by-n matrix with ones on the diagonal and zeros elsewhere.
+proc identity(m, n: int): Matrix =
+   result.m = m
+   result.n = n
+   newData()
+   for i in 0 ..< m:
+      for j in 0 ..< n:
+         if i == j:
+            result.data[i][j] = 1.0
+
+# Print the matrix to stdout.   Line the elements up in columns
+# with a Fortran-like 'Fw.d' style format.
+# param w  Column width.
+# param d  Number of digits after the decimal.
+
+proc print(m: Matrix, w, d: int) =
+]#
