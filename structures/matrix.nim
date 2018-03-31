@@ -1,4 +1,4 @@
-import math
+import math, random, strutils
 
 template checkBounds(cond: untyped, msg = "") =
    when compileOption("boundChecks"):
@@ -11,20 +11,20 @@ template newData() =
    for i in 0 ..< result.m:
       newSeq(result.data[i], result.n)
 
-type Matrix = object
+type Matrix* = object
    # Array for internal storage of elements.
    data: seq[seq[float]]
    # Row and column dimensions.
-   m, n: int
+   m*, n*: int
 
 # Construct an m-by-n matrix of zeros. 
-proc matrix(m, n: int): Matrix =
+proc matrix*(m, n: int): Matrix =
    result.m = m
    result.n = n
    newData()
 
 # Construct an m-by-n constant matrix.
-proc matrix(m, n: int, s: float): Matrix =
+proc matrix*(m, n: int, s: float): Matrix =
    result.m = m
    result.n = n
    newData()
@@ -33,7 +33,7 @@ proc matrix(m, n: int, s: float): Matrix =
          result.data[i][j] = s
 
 # Construct a matrix from a 2-D array.
-proc matrix(data: seq[seq[float]]): Matrix =
+proc matrix*(data: seq[seq[float]]): Matrix =
    result.m = data.len
    result.n = data[0].len
    when compileOption("assertions"):
@@ -44,7 +44,7 @@ proc matrix(data: seq[seq[float]]): Matrix =
 # Construct a matrix from a one-dimensional packed array
 # data One-dimensional array of float, packed by columns (ala Fortran).
 # Array length must be a multiple of m.
-proc matrix(data: seq[float], m: int): Matrix =
+proc matrix*(data: seq[float], m: int): Matrix =
    result.m = m
    result.n = if m != 0: data.len div m else: 0
    assert result.m * result.n == data.len, "Array length must be a multiple of m."
@@ -54,38 +54,38 @@ proc matrix(data: seq[float], m: int): Matrix =
          result.data[i][j] = data[i + j * m]
 
 # Copy the internal two-dimensional array.
-proc getArray(m: Matrix): seq[seq[float]] =
+proc getArray*(m: Matrix): seq[seq[float]] =
    result = m.data
 
 # Make a one-dimensional column packed copy of the internal array.
-proc getColumnPacked(m: Matrix): seq[float] =
+proc getColumnPacked*(m: Matrix): seq[float] =
    newSeq(result, m.m * m.n)
    for i in 0 ..< m.m:
       for j in 0 ..< m.n:
          result[i + j * m.m] = m.data[i][j]
 
 # Make a one-dimensional row packed copy of the internal array.
-proc getRowPacked(m: Matrix): seq[float] =
+proc getRowPacked*(m: Matrix): seq[float] =
    newSeq(result, m.m * m.n)
    for i in 0 ..< m.m:
       for j in 0 ..< m.n:
          result[i * m.n + j] = m.data[i][j]
 
 # Get row dimension.
-proc rowDimension(m: Matrix): int =
+proc rowDimension*(m: Matrix): int =
    m.m
 
 # Get column dimension.
-proc columnDimension(m: Matrix): int =
+proc columnDimension*(m: Matrix): int =
    m.n
 
 # Get a single element.
-proc `[]`(m: Matrix, i, j: int): float =
+proc `[]`*(m: Matrix, i, j: int): float =
    m.data[i][j]
 
 # Get a submatrix.
 #   m[i0 .. i1, j0 .. j1]
-proc `[]`(m: Matrix, r, c: Slice[int]): Matrix =
+proc `[]`*(m: Matrix, r, c: Slice[int]): Matrix =
    checkBounds(r.a >= 0 and r.b < m.m, "Submatrix dimensions")
    checkBounds(c.a >= 0 and c.b < m.n, "Submatrix dimensions")
    result.m = r.b - r.a + 1
@@ -97,7 +97,7 @@ proc `[]`(m: Matrix, r, c: Slice[int]): Matrix =
 
 # Get a submatrix.
 #   m[[0, 2, 3, 4], [1, 2, 3, 4]]
-proc `[]`(m: Matrix, r, c: openarray[int]): Matrix =
+proc `[]`*(m: Matrix, r, c: openarray[int]): Matrix =
    checkBounds(r.len <= m.m, "Submatrix dimensions")
    checkBounds(c.len <= m.n, "Submatrix dimensions")
    result.m = r.len
@@ -109,7 +109,7 @@ proc `[]`(m: Matrix, r, c: openarray[int]): Matrix =
 
 # Get a submatrix.
 #   m[i0 .. i1, [0, 2, 3, 4]]
-proc `[]`(m: Matrix, r: Slice[int], c: openarray[int]): Matrix =
+proc `[]`*(m: Matrix, r: Slice[int], c: openarray[int]): Matrix =
    checkBounds(r.a >= 0 and r.b < m.m, "Submatrix dimensions")
    checkBounds(c.len <= m.n, "Submatrix dimensions")
    result.m = r.b - r.a + 1
@@ -121,7 +121,7 @@ proc `[]`(m: Matrix, r: Slice[int], c: openarray[int]): Matrix =
 
 # Get a submatrix.
 #   m[[0, 2, 3, 4], j0 .. j1]
-proc `[]`(m: Matrix, r: openarray[int], c: Slice[int]): Matrix =
+proc `[]`*(m: Matrix, r: openarray[int], c: Slice[int]): Matrix =
    checkBounds(r.len <= m.m, "Submatrix dimensions")
    checkBounds(c.a >= 0 and c.b < m.n, "Submatrix dimensions")
    result.m = r.len
@@ -132,12 +132,12 @@ proc `[]`(m: Matrix, r: openarray[int], c: Slice[int]): Matrix =
          result.data[i][j - c.a] = m.data[r[i]][j]
 
 # Set a single element.
-proc `[]=`(m: var Matrix, i, j: int, s: float) =
+proc `[]=`*(m: var Matrix, i, j: int, s: float) =
    m.data[i][j] = s
 
 # Set a submatrix.
 #   m[i0 .. i1, j0 .. j1] = a
-proc `[]=`(m: var Matrix, r, c: Slice[int], a: Matrix) =
+proc `[]=`*(m: var Matrix, r, c: Slice[int], a: Matrix) =
    checkBounds(r.b - r.a + 1 == a.m, "Submatrix dimensions")
    checkBounds(c.b - c.a + 1 == a.n, "Submatrix dimensions")
    for i in r.a .. r.b:
@@ -145,7 +145,7 @@ proc `[]=`(m: var Matrix, r, c: Slice[int], a: Matrix) =
          m.data[i][j] = a.data[i - r.a][j - c.a]
 
 # Set a submatrix.
-proc `[]=`(m: var Matrix, r, c: openarray[int], a: Matrix) =
+proc `[]=`*(m: var Matrix, r, c: openarray[int], a: Matrix) =
    checkBounds(r.len == a.m, "Submatrix dimensions")
    checkBounds(c.len == a.n, "Submatrix dimensions")
    for i in 0 ..< r.len:
@@ -154,7 +154,7 @@ proc `[]=`(m: var Matrix, r, c: openarray[int], a: Matrix) =
 
 # Set a submatrix.
 #   m[[0, 2, 3, 4], j0 .. j1] = a
-proc `[]=`(m: var Matrix, r: openarray[int], c: Slice[int], a: Matrix) =
+proc `[]=`*(m: var Matrix, r: openarray[int], c: Slice[int], a: Matrix) =
    checkBounds(r.len == a.m, "Submatrix dimensions")
    checkBounds(c.b - c.a + 1 == a.n, "Submatrix dimensions")
    for i in 0 ..< r.len:
@@ -163,7 +163,7 @@ proc `[]=`(m: var Matrix, r: openarray[int], c: Slice[int], a: Matrix) =
 
 # Set a submatrix.
 #   m[i0 .. i1, [0, 2, 3, 4]] = a
-proc `[]=`(m: var Matrix, r: Slice[int], c: openarray[int], a: Matrix) =
+proc `[]=`*(m: var Matrix, r: Slice[int], c: openarray[int], a: Matrix) =
    checkBounds(r.b - r.a + 1 == a.m, "Submatrix dimensions")
    checkBounds(c.len == a.n, "Submatrix dimensions")
    for i in r.a .. r.b:
@@ -171,7 +171,7 @@ proc `[]=`(m: var Matrix, r: Slice[int], c: openarray[int], a: Matrix) =
          m.data[i][c[j]] = a.data[i - r.a][j]
 
 # Matrix transpose.
-proc transpose(m: Matrix): Matrix =
+proc t*(m: Matrix): Matrix =
    result.m = m.n
    result.n = m.m
    newData()
@@ -181,7 +181,7 @@ proc transpose(m: Matrix): Matrix =
 
 # One norm
 # returns maximum column sum.
-proc norm1(m: Matrix): float =
+proc norm1*(m: Matrix): float =
    for j in 0 ..< m.n:
       var s = 0.0
       for i in 0 ..< m.m:
@@ -190,12 +190,12 @@ proc norm1(m: Matrix): float =
 
 # Two norm
 # returns maximum singular value.
-# proc norm2(m: Matrix): float =
+# proc norm2*(m: Matrix): float =
 #    singularValueDecomposition(m).norm2())
 
 # Infinity norm
 # returns maximum row sum.
-proc normInf(m: Matrix): float =
+proc normInf*(m: Matrix): float =
    for i in 0 ..< m.m:
       var s = 0.0
       for j in 0 ..< m.n:
@@ -204,13 +204,13 @@ proc normInf(m: Matrix): float =
 
 # Frobenius norm
 # returns sqrt of sum of squares of all elements.
-proc normF(m: Matrix): float =
+proc normF*(m: Matrix): float =
    for i in 0 ..< m.m:
       for j in 0 ..< m.n:
          result = hypot(result, m.data[i][j])
 
 # Unary minus
-proc `-`(m: Matrix): Matrix =
+proc `-`*(m: Matrix): Matrix =
    result.m = m.m
    result.n = m.n
    newData()
@@ -219,7 +219,7 @@ proc `-`(m: Matrix): Matrix =
          result.data[i][j] = -m.data[i][j]
 
 # C = A + B
-proc `+`(a, b: Matrix): Matrix =
+proc `+`*(a, b: Matrix): Matrix =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    result.m = a.m
    result.n = a.n
@@ -229,14 +229,14 @@ proc `+`(a, b: Matrix): Matrix =
          result.data[i][j] = a.data[i][j] + b.data[i][j]
 
 # A = A + B
-proc `+=`(a: var Matrix, b: Matrix) =
+proc `+=`*(a: var Matrix, b: Matrix) =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    for i in 0 ..< a.m:
       for j in 0 ..< a.n:
          a.data[i][j] = a.data[i][j] + b.data[i][j]
 
 # C = A - B
-proc `-`(a, b: Matrix): Matrix =
+proc `-`*(a, b: Matrix): Matrix =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    result.m = a.m
    result.n = a.n
@@ -246,14 +246,14 @@ proc `-`(a, b: Matrix): Matrix =
          result.data[i][j] = a.data[i][j] + b.data[i][j]
 
 # A = A - B
-proc `-=`(a: var Matrix, b: Matrix) =
+proc `-=`*(a: var Matrix, b: Matrix) =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    for i in 0 ..< a.m:
       for j in 0 ..< a.n:
          a.data[i][j] = a.data[i][j] + b.data[i][j]
 
 # Element-by-element multiplication, C = A.*B
-proc `.*`(a, b: Matrix): Matrix =
+proc `.*`*(a, b: Matrix): Matrix =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    result.m = a.m
    result.n = a.n
@@ -263,14 +263,14 @@ proc `.*`(a, b: Matrix): Matrix =
          result.data[i][j] = a.data[i][j] * b.data[i][j]
 
 # Element-by-element multiplication in place, A = A.*B
-proc `.*=`(a: var Matrix, b: Matrix) =
+proc `.*=`*(a: var Matrix, b: Matrix) =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    for i in 0 ..< a.m:
       for j in 0 ..< a.n:
          a.data[i][j] = a.data[i][j] * b.data[i][j]
 
 # Element-by-element right division, C = A./B
-proc `./`(a, b: Matrix): Matrix =
+proc `./`*(a, b: Matrix): Matrix =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    result.m = a.m
    result.n = a.n
@@ -280,14 +280,14 @@ proc `./`(a, b: Matrix): Matrix =
          result.data[i][j] = a.data[i][j] / b.data[i][j]
 
 # Element-by-element right division in place, A = A./B
-proc `./=`(a: var Matrix, b: Matrix) =
+proc `./=`*(a: var Matrix, b: Matrix) =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    for i in 0 ..< a.m:
       for j in 0 ..< a.n:
          a.data[i][j] = a.data[i][j] / b.data[i][j]
 
 # Element-by-element left division, C = A.\B
-proc `.\`(a, b: Matrix): Matrix =
+proc `.\`*(a, b: Matrix): Matrix =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    result.m = a.m
    result.n = a.n
@@ -297,14 +297,14 @@ proc `.\`(a, b: Matrix): Matrix =
          result.data[i][j] = b.data[i][j] / a.data[i][j]
 
 # Element-by-element left division in place, A = A.\B
-proc `.\=`(a: var Matrix, b: Matrix) =
+proc `.\=`*(a: var Matrix, b: Matrix) =
    assert(b.m == a.m and b.n == a.n, "Matrix dimensions must agree.")
    for i in 0 ..< a.m:
       for j in 0 ..< a.n:
          a.data[i][j] = b.data[i][j] / a.data[i][j]
 
 # Multiply a matrix by a scalar, C = s*A
-proc `*`(s: float, m: Matrix): Matrix =
+proc `*`*(s: float, m: Matrix): Matrix =
    result.m = m.m
    result.n = m.n
    newData()
@@ -313,13 +313,13 @@ proc `*`(s: float, m: Matrix): Matrix =
          result.data[i][j] = s * m.data[i][j]
 
 # Multiply a matrix by a scalar in place, A = s*A
-proc `*=`(m: var Matrix, s: float) =
+proc `*=`*(m: var Matrix, s: float) =
    for i in 0 ..< m.m:
       for j in 0 ..< m.n:
          m.data[i][j] = s * m.data[i][j]
 
 # Linear algebraic matrix multiplication, A * B
-proc `*`(a, b: Matrix): Matrix =
+proc `*`*(a, b: Matrix): Matrix =
    assert(b.m == a.n, "Matrix inner dimensions must agree.")
    result.m = a.m
    result.n = b.n
@@ -334,7 +334,6 @@ proc `*`(a, b: Matrix): Matrix =
          for k in 0 ..< a.n:
             s += a_rowi[k] * b_colj[k]
          result.data[i][j] = s
-
 #[
 # LU Decomposition
 proc lu(m: Matrix): LUDecomposition =
@@ -369,7 +368,7 @@ proc solve(a, b: Matrix): Matrix =
 # param B  right hand side
 # returns  solution if A is square, least squares solution otherwise.
 proc solveTranspose(a, b: Matrix): Matrix =
-   transpose(m).solve(b.transpose())
+   t(m).solve(b.t())
 
 # Matrix inverse or pseudoinverse
 # returns inverse(A) if A is square, pseudoinverse otherwise.
@@ -389,16 +388,16 @@ proc rank(m: Matrix): int =
 # returns  ratio of largest to smallest singular value.
 proc cond(m: Matrix): float =
    SingularValueDecomposition(m).cond()
-
+]#
 # Matrix trace.
 # return  sum of the diagonal elements.
-proc trace(m: Matrix): float =
+proc trace*(m: Matrix): float =
    for i in 0 ..< min(m.m, m.n):
       result += m.data[i][i]
 
 # Generate matrix with random elements
 # return  An m-by-n matrix with uniformly distributed random elements.
-proc randMatrix(m, n): Matrix =
+proc randMatrix*(m, n: int): Matrix =
    result.m = m
    result.n = n
    newData()
@@ -408,7 +407,7 @@ proc randMatrix(m, n): Matrix =
 
 # Generate identity matrix
 # returns An m-by-n matrix with ones on the diagonal and zeros elsewhere.
-proc identity(m, n: int): Matrix =
+proc identity*(m, n: int): Matrix =
    result.m = m
    result.n = n
    newData()
@@ -421,6 +420,50 @@ proc identity(m, n: int): Matrix =
 # with a Fortran-like 'Fw.d' style format.
 # param w  Column width.
 # param d  Number of digits after the decimal.
+proc columnFormat(s: seq[float]): seq[string] =
+   result = newSeq[string](s.len)
+   for i, v in s:
+      result[i] = formatFloat(v, ffDecimal, 6)
 
-proc print(m: Matrix, w, d: int) =
-]#
+   var lenLeft = newSeq[int](s.len)
+   var maxLenLeft = 0
+   var lenRight = newSeq[int](s.len)
+   var maxLenRight = 0
+
+   for i, f in result:
+      let index = f.find('.')
+      lenLeft[i]  = index
+      maxLenLeft = max(maxLenLeft, lenLeft[i])
+      lenRight[i] = f.len - index - 1
+      maxLenRight = max(maxLenRight, lenRight[i])
+
+   for i in 0 ..< s.len:
+      result[i].insert(spaces(maxLenLeft  - lenLeft[i]))
+      result[i].add(spaces(maxLenRight - lenRight[i]))
+
+proc `$`*(m: Matrix): string =
+   var cols: seq[seq[string]]
+   newSeq(cols, m.m)
+   for i in 0 ..< m.m:
+      cols[i] = columnFormat(m.data[i])
+
+   result = ""
+   for j in 0 ..< m.n:
+      if j == 0:
+         result.add "⎡"
+      elif j == m.n - 1:
+         result.add "⎣"
+      else:
+         result.add "⎢"
+
+      for i in 0 ..< m.m:
+         if i != 0:
+            result.add "  "
+         result.add cols[i][j]
+
+      if j == 0:
+         result.add "⎤\n"
+      elif j == m.n - 1:
+         result.add "⎦\n"
+      else:
+         result.add "⎥\n"
