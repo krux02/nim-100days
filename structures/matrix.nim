@@ -427,19 +427,14 @@ proc columnFormat(s: seq[float]): seq[string] =
 
    var lenLeft = newSeq[int](s.len)
    var maxLenLeft = 0
-   var lenRight = newSeq[int](s.len)
-   var maxLenRight = 0
 
    for i, f in result:
       let index = f.find('.')
       lenLeft[i]  = index
       maxLenLeft = max(maxLenLeft, lenLeft[i])
-      lenRight[i] = f.len - index - 1
-      maxLenRight = max(maxLenRight, lenRight[i])
 
    for i in 0 ..< s.len:
-      result[i].insert(spaces(maxLenLeft  - lenLeft[i]))
-      result[i].add(spaces(maxLenRight - lenRight[i]))
+      result[i] = spaces(maxLenLeft  - lenLeft[i]) & result[i]
 
 proc `$`*(m: Matrix): string =
    var cols: seq[seq[string]]
